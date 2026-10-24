@@ -12,10 +12,19 @@ import { createTracingRouter } from "./modules/tracing/tracing.routes.js";
 import { createImpactRouter } from "./modules/impact/impact.routes.js";
 import { createAgentRouter } from "./modules/agent/agent.routes.js";
 
+import { performanceMiddleware } from "./middleware/performance.middleware.js";
+import { securityHeadersMiddleware, pathTraversalGuardMiddleware } from "./middleware/security.middleware.js";
+import { authMiddleware } from "./middleware/auth.middleware.js";
+import { globalRateLimiter } from "./middleware/rate-limiter.middleware.js";
+
 export function createApp(): Express {
   const app = express();
 
-  // Basic middleware
+  // Performance & Security foundation
+  app.use(performanceMiddleware);
+  app.use(securityHeadersMiddleware);
+
+  // Cross-Origin & Body parsing
   app.use(
     cors({
       origin: [env.WEB_ORIGIN, "http://localhost:5173", "http://127.0.0.1:5173"],
@@ -24,7 +33,14 @@ export function createApp(): Express {
   );
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+  // Identity extraction & Observability
+  app.use(authMiddleware);
   app.use(requestLoggerMiddleware);
+
+  // Rate Limiting & Input Sanity Guards
+  app.use(globalRateLimiter);
+  app.use(pathTraversalGuardMiddleware);
 
   // Mount API modules
   app.use("/api", healthRouter);
