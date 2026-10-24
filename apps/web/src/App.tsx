@@ -18,6 +18,7 @@ import { FileListTable } from "./features/repositories/FileListTable";
 import { ArchitecturePage } from "./features/architecture/ArchitecturePage";
 import { CodeSearchPage } from "./features/code-search/CodeSearchPage";
 import { FlowTracingPage } from "./features/flow-tracing/FlowTracingPage";
+import { ImpactAnalysisPage } from "./features/impact-analysis/ImpactAnalysisPage";
 
 type ActiveTab = "repos" | "graph" | "search" | "trace" | "agent" | "impact";
 
@@ -344,7 +345,27 @@ export function App() {
           )
         )}
 
-        {activeTab !== "repos" && activeTab !== "graph" && activeTab !== "search" && activeTab !== "trace" && (
+        {activeTab === "impact" && (
+          activeRepoId ? (
+            <ImpactAnalysisPage repositoryId={activeRepoId} />
+          ) : (
+            <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
+              <ShieldAlert className="h-12 w-12 text-rose-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-200">No Repository Selected</h3>
+              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
+                Please ingest or select a GitHub repository from the Repositories tab first to perform change impact analysis.
+              </p>
+              <button
+                onClick={() => setActiveTab("repos")}
+                className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
+              >
+                Go to Repositories
+              </button>
+            </div>
+          )
+        )}
+
+        {activeTab !== "repos" && activeTab !== "graph" && activeTab !== "search" && activeTab !== "trace" && activeTab !== "impact" && (
           <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
             <h3 className="text-xl font-bold text-slate-200">Feature Module Under Construction</h3>
             <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">

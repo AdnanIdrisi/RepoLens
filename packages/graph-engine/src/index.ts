@@ -10,3 +10,4 @@ export * from "./graph-builder.js";
 export * from "./adjacency.js";
 export * from "./traversal.js";
 export * from "./flow-tracer.js";
+export * from "./impact-analyzer.js";

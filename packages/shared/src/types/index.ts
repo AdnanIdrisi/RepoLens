@@ -16,7 +16,10 @@ import {
   TraceResponseSchema,
   SearchRequestSchema,
   SearchResultItemSchema,
-  SearchResponseSchema
+  SearchResponseSchema,
+  ImpactRequestSchema,
+  AffectedEntitySchema,
+  ImpactReportSchema
 } from "../schemas/index.js";
 import {
   REPOSITORY_STATUSES,
@@ -57,6 +60,9 @@ export type TraceResponse = z.infer<typeof TraceResponseSchema>;
 export type SearchRequest = z.infer<typeof SearchRequestSchema>;
 export type SearchResultItem = z.infer<typeof SearchResultItemSchema>;
 export type SearchResponse = z.infer<typeof SearchResponseSchema>;
+export type ImpactRequest = z.infer<typeof ImpactRequestSchema>;
+export type AffectedEntity = z.infer<typeof AffectedEntitySchema>;
+export type ImpactReport = z.infer<typeof ImpactReportSchema>;
 
 export interface ApiResponse<T = unknown> {
   success: boolean;

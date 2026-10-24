@@ -211,3 +211,38 @@ export const SearchResponseSchema = z.object({
   results: z.array(SearchResultItemSchema)
 });
 
+// Impact Analysis Schemas
+export const ImpactRequestSchema = z.object({
+  targetFilePath: z.string().min(1),
+  symbolId: z.string().optional(),
+  maxDepth: z.number().int().min(1).max(10).default(3)
+});
+
+export const AffectedEntitySchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  filePath: z.string(),
+  kind: z.string(),
+  distance: z.number().int().positive(),
+  dependencyPath: z.array(z.string()),
+  relationship: z.string().optional()
+});
+
+export const ImpactReportSchema = z.object({
+  target: z.object({
+    filePath: z.string(),
+    symbolId: z.string().optional()
+  }),
+  directAffected: z.array(AffectedEntitySchema),
+  indirectAffected: z.array(AffectedEntitySchema),
+  totalAffectedFiles: z.number().int().nonnegative(),
+  totalAffectedSymbols: z.number().int().nonnegative(),
+  suggestedTests: z.array(
+    z.object({
+      testFilePath: z.string(),
+      reason: z.string()
+    })
+  )
+});
+
+

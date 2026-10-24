@@ -9,6 +9,7 @@ import { createFilesRouter } from "./modules/files/files.routes.js";
 import { createGraphRouter } from "./modules/graph/graph.routes.js";
 import { createRetrievalRouter } from "./modules/retrieval/retrieval.routes.js";
 import { createTracingRouter } from "./modules/tracing/tracing.routes.js";
+import { createImpactRouter } from "./modules/impact/impact.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -31,6 +32,7 @@ export function createApp(): Express {
   app.use("/api", createGraphRouter());
   app.use("/api", createRetrievalRouter());
   app.use("/api", createTracingRouter());
+  app.use("/api", createImpactRouter());
 
   // Central error handling
   app.use(errorMiddleware);
