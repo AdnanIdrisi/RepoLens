@@ -19,4 +19,5 @@ export * from "./extractors/routes.extractor.js";
 
 export * from "./diagnostics/parser.diagnostics.js";
 export * from "./symbols/symbol-identity.js";
+export * from "./resolvers/index.js";
 export * from "./analyzer.js";
