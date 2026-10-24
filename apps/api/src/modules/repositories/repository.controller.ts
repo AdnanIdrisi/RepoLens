@@ -151,4 +151,30 @@ export class RepositoryController {
       next(err);
     }
   };
+
+  public syncRepository = async (
+    req: Request,
+    res: Response<ApiResponse>,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = RepositoryIdParamSchema.parse(req.params);
+      const { IndexingOrchestrator } = await import("./indexing.orchestrator.js");
+      const orchestrator = new IndexingOrchestrator();
+      const jobId = await orchestrator.startIndexing(id);
+
+      res.status(202).json({
+        success: true,
+        data: {
+          repositoryId: id,
+          jobId
+        },
+        meta: {
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
 }

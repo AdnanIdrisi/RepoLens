@@ -9,6 +9,7 @@ export function createRepositoryRouter(controller: RepositoryController = new Re
   router.get("/repositories", controller.listRepositories);
   router.get("/repositories/:id", controller.getRepository);
   router.get("/repositories/:id/files", controller.listFiles);
+  router.post("/repositories/:id/sync", controller.syncRepository);
 
   // Job endpoints
   router.get("/jobs/:jobId", controller.getJob);
