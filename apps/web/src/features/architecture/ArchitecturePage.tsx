@@ -14,7 +14,7 @@ import "@xyflow/react/dist/style.css";
 import { CodeNode } from "./CodeNode";
 import { GraphLegend } from "./GraphLegend";
 import { SourceViewerPanel } from "./SourceViewerPanel";
-import { RefreshCw, Layers, Network, Loader2 } from "lucide-react";
+import { RefreshCw, Layers, Network, Loader2, Crosshair, RotateCcw } from "lucide-react";
 import type { GraphNode, GraphEdge } from "@repolens/shared";
 
 interface ArchitecturePageProps {
@@ -31,18 +31,26 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
   const [loading, setLoading] = useState(true);
   const [indexing, setIndexing] = useState(false);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
-  const [depth, setDepth] = useState<number>(1);
+  const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
+  const [activeRootId, setActiveRootId] = useState<string | null>(null);
+  const [depth, setDepth] = useState<number | "all">(1);
 
   const loadGraph = useCallback(
-    async (rootId?: string) => {
+    async (targetRootId?: string | null, targetDepth: number | "all" = depth) => {
       setLoading(true);
       try {
+        const isAll = targetDepth === "all";
         const params = new URLSearchParams({
-          depth: depth.toString(),
-          limit: "150"
+          scope: isAll ? "all" : "neighborhood",
+          limit: isAll ? "250" : "150"
         });
-        if (rootId) {
-          params.append("rootNodeId", rootId);
+
+        if (!isAll) {
+          params.append("depth", targetDepth.toString());
+        }
+
+        if (targetRootId) {
+          params.append("rootNodeId", targetRootId);
         }
 
         const res = await fetch(`/api/repositories/${repositoryId}/graph?${params.toString()}`);
@@ -51,31 +59,124 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
         if (res.ok && data.success && data.data) {
           const rawNodes: GraphNode[] = data.data.nodes;
           const rawEdges: GraphEdge[] = data.data.edges;
+          const currentRootId = data.data.rootId || targetRootId || rawNodes[0]?.id;
 
-          // Simple layout: arrange in organized columns
-          const columnCount = Math.max(3, Math.ceil(Math.sqrt(rawNodes.length)));
-          const xSpacing = 280;
-          const ySpacing = 140;
+          setActiveRootId(currentRootId || null);
 
-          const flowNodes: Node[] = rawNodes.map((n, idx) => {
-            const col = idx % columnCount;
-            const row = Math.floor(idx / columnCount);
+          // Compute clean directional layout
+          let flowNodes: Node[] = [];
 
-            return {
-              id: n.id,
-              type: "codeNode",
-              position: { x: col * xSpacing + 40, y: row * ySpacing + 40 },
-              data: {
+          if (isAll || !currentRootId) {
+            // Multi-column grid for full repository overview
+            const columnCount = Math.max(3, Math.ceil(Math.sqrt(rawNodes.length * 1.4)));
+            const xSpacing = 300;
+            const ySpacing = 130;
+
+            flowNodes = rawNodes.map((n, idx) => {
+              const col = idx % columnCount;
+              const row = Math.floor(idx / columnCount);
+              return {
                 id: n.id,
-                label: n.label,
-                kind: n.kind,
-                filePath: n.filePath,
-                startLine: n.startLine,
-                endLine: n.endLine,
-                isSelected: selectedNode?.id === n.id
+                type: "codeNode",
+                position: { x: col * xSpacing + 60, y: row * ySpacing + 60 },
+                data: {
+                  id: n.id,
+                  label: n.label,
+                  kind: n.kind,
+                  filePath: n.filePath,
+                  startLine: n.startLine,
+                  endLine: n.endLine,
+                  isRoot: n.id === currentRootId,
+                  isSelected: selectedNode?.id === n.id
+                }
+              };
+            });
+          } else {
+            // Directional neighborhood layout centered around root node
+            const outAdj = new Map<string, string[]>();
+            const inAdj = new Map<string, string[]>();
+
+            for (const e of rawEdges) {
+              if (!outAdj.has(e.sourceId)) outAdj.set(e.sourceId, []);
+              outAdj.get(e.sourceId)!.push(e.targetId);
+
+              if (!inAdj.has(e.targetId)) inAdj.set(e.targetId, []);
+              inAdj.get(e.targetId)!.push(e.sourceId);
+            }
+
+            // Forward BFS from root (outgoing dependencies)
+            const forwardDist = new Map<string, number>([[currentRootId, 0]]);
+            const qF: Array<[string, number]> = [[currentRootId, 0]];
+            while (qF.length > 0) {
+              const [curr, d] = qF.shift()!;
+              for (const nxt of outAdj.get(curr) || []) {
+                if (!forwardDist.has(nxt)) {
+                  forwardDist.set(nxt, d + 1);
+                  qF.push([nxt, d + 1]);
+                }
               }
-            };
-          });
+            }
+
+            // Reverse BFS from root (incoming callers)
+            const reverseDist = new Map<string, number>([[currentRootId, 0]]);
+            const qR: Array<[string, number]> = [[currentRootId, 0]];
+            while (qR.length > 0) {
+              const [curr, d] = qR.shift()!;
+              for (const prv of inAdj.get(curr) || []) {
+                if (!reverseDist.has(prv)) {
+                  reverseDist.set(prv, d + 1);
+                  qR.push([prv, d + 1]);
+                }
+              }
+            }
+
+            // Group nodes by relative column index
+            const columnGroups = new Map<number, GraphNode[]>();
+
+            for (const n of rawNodes) {
+              let col = 0;
+              if (n.id === currentRootId) {
+                col = 0;
+              } else if (forwardDist.has(n.id)) {
+                col = forwardDist.get(n.id)!;
+              } else if (reverseDist.has(n.id)) {
+                col = -reverseDist.get(n.id)!;
+              } else {
+                col = 1;
+              }
+
+              if (!columnGroups.has(col)) columnGroups.set(col, []);
+              columnGroups.get(col)!.push(n);
+            }
+
+            // Position columns with root around center
+            const minCol = Math.min(...Array.from(columnGroups.keys()));
+            const xOffset = Math.abs(Math.min(0, minCol)) * 360 + 60;
+
+            for (const [col, groupNodes] of columnGroups.entries()) {
+              const x = xOffset + col * 360;
+              const totalHeight = groupNodes.length * 130;
+              const startY = Math.max(60, 280 - totalHeight / 2);
+
+              groupNodes.forEach((n, idx) => {
+                flowNodes.push({
+                  id: n.id,
+                  type: "codeNode",
+                  position: { x, y: startY + idx * 130 },
+                  data: {
+                    id: n.id,
+                    label: n.label,
+                    kind: n.kind,
+                    filePath: n.filePath,
+                    startLine: n.startLine,
+                    endLine: n.endLine,
+                    isRoot: n.id === currentRootId,
+                    isSelected: selectedNode?.id === n.id
+                  }
+                });
+              });
+            }
+          }
 
           const getEdgeColor = (kind: string) => {
             switch (kind) {
@@ -118,9 +219,10 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
     [repositoryId, depth, selectedNode, setNodes, setEdges]
   );
 
+  // Re-fetch when depth or focusNodeId changes
   useEffect(() => {
-    loadGraph();
-  }, [loadGraph]);
+    loadGraph(focusNodeId, depth);
+  }, [depth, focusNodeId, loadGraph]);
 
   const handleNodeClick = (_: React.MouseEvent, node: Node) => {
     setSelectedNode({
@@ -135,6 +237,17 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
     });
   };
 
+  const handleFocusNode = (nodeId: string) => {
+    setFocusNodeId(nodeId);
+    if (depth === "all") {
+      setDepth(1);
+    }
+  };
+
+  const handleResetToEntry = () => {
+    setFocusNodeId(null);
+  };
+
   const handleReindex = async () => {
     setIndexing(true);
     try {
@@ -142,7 +255,7 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
         method: "POST"
       });
       if (res.ok) {
-        await loadGraph();
+        await loadGraph(focusNodeId, depth);
       }
     } catch (err) {
       console.error("Re-indexing failed:", err);
@@ -151,30 +264,73 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
     }
   };
 
+  const activeRootNode = nodes.find((n) => n.id === activeRootId);
+
   return (
     <div className="relative h-[calc(100vh-140px)] w-full rounded-2xl border border-slate-800 bg-[#0b0f19] shadow-2xl overflow-hidden flex flex-col">
       {/* Top Toolbar */}
       <div className="p-3 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 z-10">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center flex-wrap gap-2.5">
           <div className="flex items-center space-x-1.5 text-white font-bold text-sm">
             <Network className="h-4 w-4 text-indigo-400" />
             <span>P1.1 Code Relationship Graph</span>
           </div>
 
-          <div className="flex items-center space-x-1.5 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 text-xs text-slate-300">
-            <Layers className="h-3.5 w-3.5 text-slate-500" />
-            <span>Depth:</span>
-            {[1, 2, 3].map((d) => (
+          {/* Depth Selector */}
+          <div className="flex items-center space-x-1 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 text-xs text-slate-300">
+            <Layers className="h-3.5 w-3.5 text-slate-500 mr-1" />
+            <span className="text-slate-400">Depth:</span>
+            {([1, 2, 3] as const).map((d) => (
               <button
                 key={d}
                 onClick={() => setDepth(d)}
-                className={`px-1.5 py-0.5 rounded text-xs transition-colors ${
-                  depth === d ? "bg-indigo-600 text-white font-bold" : "text-slate-400 hover:text-white"
+                className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                  depth === d
+                    ? "bg-indigo-600 text-white font-bold shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
                 }`}
+                title={`Show nodes within ${d} hop${d > 1 ? "s" : ""} from root`}
               >
                 {d}
               </button>
             ))}
+            <button
+              onClick={() => setDepth("all")}
+              className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                depth === "all"
+                  ? "bg-indigo-600 text-white font-bold shadow-sm"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+              }`}
+              title="Show all files in the repository"
+            >
+              All Files
+            </button>
+          </div>
+
+          {/* Focus Root Indicator */}
+          {activeRootNode && depth !== "all" && (
+            <div className="flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-lg text-xs">
+              <Crosshair className="h-3 w-3 text-amber-400" />
+              <span className="text-amber-300/80">Focus:</span>
+              <span className="text-amber-200 font-mono font-semibold max-w-[140px] truncate" title={activeRootNode.data.label as string}>
+                {activeRootNode.data.label as string}
+              </span>
+              {focusNodeId && (
+                <button
+                  onClick={handleResetToEntry}
+                  className="ml-1 text-[10px] text-amber-400 hover:text-white underline flex items-center"
+                  title="Reset to primary application entry point"
+                >
+                  <RotateCcw className="h-2.5 w-2.5 mr-0.5" />
+                  Reset
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Node Count Badge */}
+          <div className="text-[11px] font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+            {nodes.length} nodes · {edges.length} edges
           </div>
         </div>
 
@@ -228,6 +384,7 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeClick={handleNodeClick}
+            onNodeDoubleClick={(_e, node) => handleFocusNode(node.id)}
             nodeTypes={nodeTypes}
             fitView
             minZoom={0.2}
@@ -263,6 +420,7 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
           repositoryId={repositoryId}
           node={selectedNode}
           onClose={() => setSelectedNode(null)}
+          onFocusNode={handleFocusNode}
         />
       </div>
     </div>

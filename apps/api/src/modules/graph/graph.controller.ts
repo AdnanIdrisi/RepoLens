@@ -14,6 +14,7 @@ const GraphQuerySchema = z.object({
     .string()
     .transform((val) => val.split(",").map((s) => s.trim()) as GraphNodeKind[])
     .optional(),
+  scope: z.enum(["all", "neighborhood"]).default("neighborhood"),
   limit: z.coerce.number().int().min(1).max(300).default(100)
 });
 

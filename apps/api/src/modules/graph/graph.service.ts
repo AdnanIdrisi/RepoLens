@@ -243,6 +243,7 @@ export class GraphService {
       depth?: number;
       edgeKinds?: GraphEdgeKind[];
       nodeKinds?: GraphNodeKind[];
+      scope?: "all" | "neighborhood";
       limit?: number;
     } = {}
   ): Promise<{ nodes: GraphNode[]; edges: GraphEdge[]; rootId?: string }> {
@@ -258,11 +259,12 @@ export class GraphService {
 
     const maxDepth = options.depth ? Math.min(Math.max(1, options.depth), 4) : 1;
     const limit = options.limit ? Math.min(options.limit, 300) : 100;
+    const scope = options.scope || (options.rootNodeId ? "neighborhood" : "neighborhood");
 
     // Load nodes and edges for this commit
     const [dbNodes, dbEdges] = await Promise.all([
-      GraphNodeModel.find({ repositoryId, commitSha }).limit(limit * 3).lean(),
-      GraphEdgeModel.find({ repositoryId, commitSha }).limit(limit * 5).lean()
+      GraphNodeModel.find({ repositoryId, commitSha }).limit(limit * 4).lean(),
+      GraphEdgeModel.find({ repositoryId, commitSha }).limit(limit * 6).lean()
     ]);
 
     if (dbNodes.length === 0) {
@@ -291,22 +293,61 @@ export class GraphService {
       evidence: e.evidence
     }));
 
-    // If a specific root node was selected, extract its neighborhood
-    if (options.rootNodeId) {
-      const codeGraph = buildGraph(nodes, edges);
-      const subgraph = getSubgraph(codeGraph, options.rootNodeId, maxDepth, {
-        edgeKinds: options.edgeKinds,
-        nodeKinds: options.nodeKinds,
-        limit
-      });
-      return {
-        nodes: subgraph.nodes,
-        edges: subgraph.edges,
-        rootId: options.rootNodeId
-      };
+    let rootNodeId = options.rootNodeId;
+
+    // In neighborhood mode, center around rootNodeId or auto-discover primary entry point
+    if (scope !== "all") {
+      if (!rootNodeId) {
+        // Look for typical application entry points
+        const candidateNames = [
+          "server.js", "server.ts", "app.js", "app.ts", "index.js", "index.ts", "main.js", "main.ts"
+        ];
+        const entryNode = nodes.find(
+          (n) => n.kind === "file" && candidateNames.includes(path.posix.basename(n.filePath).toLowerCase())
+        );
+
+        if (entryNode) {
+          rootNodeId = entryNode.id;
+        } else {
+          // Fallback: pick node with highest degree
+          const degrees = new Map<string, number>();
+          for (const e of edges) {
+            degrees.set(e.sourceId, (degrees.get(e.sourceId) || 0) + 1);
+            degrees.set(e.targetId, (degrees.get(e.targetId) || 0) + 1);
+          }
+          let highestDegree = -1;
+          for (const n of nodes) {
+            if (n.kind === "file") {
+              const deg = degrees.get(n.id) || 0;
+              if (deg > highestDegree) {
+                highestDegree = deg;
+                rootNodeId = n.id;
+              }
+            }
+          }
+          if (!rootNodeId && nodes.length > 0) {
+            rootNodeId = nodes[0].id;
+          }
+        }
+      }
+
+      if (rootNodeId) {
+        const codeGraph = buildGraph(nodes, edges);
+        const subgraph = getSubgraph(codeGraph, rootNodeId, maxDepth, {
+          edgeKinds: options.edgeKinds,
+          nodeKinds: options.nodeKinds,
+          limit
+        });
+
+        return {
+          nodes: subgraph.nodes,
+          edges: subgraph.edges,
+          rootId: rootNodeId
+        };
+      }
     }
 
-    // Default overview: prioritize file-to-file import edges
+    // Default overview (when scope is "all"): prioritize file-to-file import edges
     const fileNodes = nodes.filter((n) => n.kind === "file").slice(0, limit);
     const fileNodeIds = new Set(fileNodes.map((n) => n.id));
     const importEdges = edges.filter(
@@ -315,7 +356,8 @@ export class GraphService {
 
     return {
       nodes: fileNodes,
-      edges: importEdges
+      edges: importEdges,
+      rootId: rootNodeId
     };
   }
 

@@ -11,6 +11,7 @@ interface CodeNodeData {
   startLine?: number;
   endLine?: number;
   isSelected?: boolean;
+  isRoot?: boolean;
 }
 
 export const CodeNode = memo(({ data }: { data: CodeNodeData }) => {
@@ -72,19 +73,31 @@ export const CodeNode = memo(({ data }: { data: CodeNodeData }) => {
 
   return (
     <div
-      className={`min-w-[190px] max-w-[260px] rounded-xl border p-3 shadow-xl backdrop-blur-md transition-all ${config.bg} ${config.border} ${
-        data.isSelected ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 scale-105" : ""
+      className={`min-w-[200px] max-w-[270px] rounded-xl border p-3 shadow-xl backdrop-blur-md transition-all ${
+        data.isRoot
+          ? "border-amber-400/80 bg-slate-900/95 ring-2 ring-amber-400/60 shadow-amber-500/20 shadow-2xl scale-105"
+          : data.isSelected
+          ? "border-indigo-400 bg-slate-900/95 ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-950 scale-105"
+          : `${config.bg} ${config.border}`
       }`}
     >
+      <Handle type="target" position={Position.Left} className="w-2.5 h-2.5 bg-indigo-500 border-slate-950" />
       <Handle type="target" position={Position.Top} className="w-2.5 h-2.5 bg-indigo-500 border-slate-950" />
-      
+
       {/* Node Header */}
-      <div className="flex items-center justify-between mb-1.5">
-        <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${config.badge}`}>
-          {data.kind}
-        </span>
+      <div className="flex items-center justify-between mb-1.5 gap-1.5">
+        <div className="flex items-center space-x-1">
+          <span className={`text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border ${config.badge}`}>
+            {data.kind}
+          </span>
+          {data.isRoot && (
+            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              Focus Root
+            </span>
+          )}
+        </div>
         {data.startLine && (
-          <span className="text-[10px] font-mono text-slate-500">
+          <span className="text-[10px] font-mono text-slate-500 shrink-0">
             L{data.startLine}{data.endLine ? `-${data.endLine}` : ""}
           </span>
         )}
@@ -92,7 +105,7 @@ export const CodeNode = memo(({ data }: { data: CodeNodeData }) => {
 
       {/* Node Title & Icon */}
       <div className="flex items-start space-x-2">
-        <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${config.header}`} />
+        <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${data.isRoot ? "text-amber-400" : config.header}`} />
         <div className="overflow-hidden">
           <div className="text-xs font-bold text-white truncate font-mono" title={data.label}>
             {data.label}
@@ -103,6 +116,7 @@ export const CodeNode = memo(({ data }: { data: CodeNodeData }) => {
         </div>
       </div>
 
+      <Handle type="source" position={Position.Right} className="w-2.5 h-2.5 bg-indigo-500 border-slate-950" />
       <Handle type="source" position={Position.Bottom} className="w-2.5 h-2.5 bg-indigo-500 border-slate-950" />
     </div>
   );
