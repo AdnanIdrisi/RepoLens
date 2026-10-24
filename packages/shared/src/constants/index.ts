@@ -74,3 +74,10 @@ export const GRAPH_EDGE_KINDS = [
   "middleware_to",
   "uses"
 ] as const;
+
+export const SEARCH_MATCH_TYPES = [
+  "hybrid",
+  "vector",
+  "lexical"
+] as const;
+

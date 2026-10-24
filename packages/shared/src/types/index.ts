@@ -11,7 +11,10 @@ import {
   GraphEdgeEvidenceSchema,
   CodeChunkSchema,
   RouteRecordSchema,
-  TraceStepSchema
+  TraceStepSchema,
+  SearchRequestSchema,
+  SearchResultItemSchema,
+  SearchResponseSchema
 } from "../schemas/index.js";
 import {
   REPOSITORY_STATUSES,
@@ -21,7 +24,8 @@ import {
   SYMBOL_KINDS,
   IMPORT_RESOLUTION_STATUSES,
   GRAPH_NODE_KINDS,
-  GRAPH_EDGE_KINDS
+  GRAPH_EDGE_KINDS,
+  SEARCH_MATCH_TYPES
 } from "../constants/index.js";
 
 export type RepositoryStatus = (typeof REPOSITORY_STATUSES)[number];
@@ -32,6 +36,7 @@ export type SymbolKind = (typeof SYMBOL_KINDS)[number];
 export type ImportResolutionStatus = (typeof IMPORT_RESOLUTION_STATUSES)[number];
 export type GraphNodeKind = (typeof GRAPH_NODE_KINDS)[number];
 export type GraphEdgeKind = (typeof GRAPH_EDGE_KINDS)[number];
+export type SearchMatchType = (typeof SEARCH_MATCH_TYPES)[number];
 
 export type Repository = z.infer<typeof RepositorySchema>;
 export type RegisterRepositoryInput = z.infer<typeof RegisterRepositoryInputSchema>;
@@ -45,6 +50,9 @@ export type GraphEdgeEvidence = z.infer<typeof GraphEdgeEvidenceSchema>;
 export type CodeChunk = z.infer<typeof CodeChunkSchema>;
 export type RouteRecord = z.infer<typeof RouteRecordSchema>;
 export type TraceStep = z.infer<typeof TraceStepSchema>;
+export type SearchRequest = z.infer<typeof SearchRequestSchema>;
+export type SearchResultItem = z.infer<typeof SearchResultItemSchema>;
+export type SearchResponse = z.infer<typeof SearchResponseSchema>;
 
 export interface ApiResponse<T = unknown> {
   success: boolean;

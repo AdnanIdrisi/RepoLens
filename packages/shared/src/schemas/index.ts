@@ -6,7 +6,8 @@ import {
   SYMBOL_KINDS,
   IMPORT_RESOLUTION_STATUSES,
   GRAPH_NODE_KINDS,
-  GRAPH_EDGE_KINDS
+  GRAPH_EDGE_KINDS,
+  SEARCH_MATCH_TYPES
 } from "../constants/index.js";
 
 // Repository Schema
@@ -161,3 +162,35 @@ export const TraceStepSchema = z.object({
   confidence: z.number().min(0).max(1).default(1.0),
   evidence: z.string().optional()
 });
+
+// Search Schemas
+export const SearchRequestSchema = z.object({
+  query: z.string().min(1).max(500),
+  limit: z.number().int().min(1).max(50).default(10),
+  symbolKinds: z.array(z.string()).optional(),
+  path: z.string().optional(),
+  matchType: z.enum(SEARCH_MATCH_TYPES).default("hybrid")
+});
+
+export const SearchResultItemSchema = z.object({
+  chunkId: z.string(),
+  filePath: z.string(),
+  symbolId: z.string().optional(),
+  symbolName: z.string().optional(),
+  symbolKind: z.string().optional(),
+  startLine: z.number().int().positive(),
+  endLine: z.number().int().positive(),
+  snippet: z.string(),
+  score: z.number(),
+  matchType: z.enum(SEARCH_MATCH_TYPES),
+  repositoryId: z.string(),
+  commitSha: z.string()
+});
+
+export const SearchResponseSchema = z.object({
+  query: z.string(),
+  matchType: z.enum(SEARCH_MATCH_TYPES),
+  total: z.number().int().nonnegative(),
+  results: z.array(SearchResultItemSchema)
+});
+

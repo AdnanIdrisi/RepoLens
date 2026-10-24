@@ -17,6 +17,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@google/genai": "^2.31.0",
+    "@repolens/code-analyzer": "*",
     "@repolens/shared": "*"
   },
   "devDependencies": {
