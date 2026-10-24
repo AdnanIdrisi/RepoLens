@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search, FileCode, CheckCircle2, XCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, FileCode, CheckCircle2, XCircle, Info, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { SourceViewerModal } from "./SourceViewerModal";
 
 interface CodeFileItem {
   _id: string;
@@ -22,6 +23,7 @@ export function FileListTable({ repositoryId }: FileListTableProps) {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalFiles, setTotalFiles] = useState(0);
+  const [selectedFileForView, setSelectedFileForView] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchFiles() {
@@ -167,10 +169,10 @@ export function FileListTable({ repositoryId }: FileListTableProps) {
                   <td className="py-2.5 px-4 font-mono text-slate-200">{file.path}</td>
                   <td className="py-2.5 px-4">{getLanguageBadge(file.language)}</td>
                   <td className="py-2.5 px-4 text-slate-400 font-mono">{formatSize(file.sizeBytes)}</td>
-                  <td className="py-2.5 px-4">
+                  <td className="py-2.5 px-4 flex items-center justify-between">
                     {file.status === "discovered" || file.status === "fetched" ? (
                       <span className="inline-flex items-center text-emerald-400 font-medium">
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Eligible for Indexing
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Eligible
                       </span>
                     ) : (
                       <span className="inline-flex items-center text-slate-400">
@@ -182,6 +184,15 @@ export function FileListTable({ repositoryId }: FileListTableProps) {
                           <Info className="h-3 w-3 ml-1 text-slate-500 shrink-0" />
                         )}
                       </span>
+                    )}
+
+                    {(file.status === "discovered" || file.status === "fetched") && (
+                      <button
+                        onClick={() => setSelectedFileForView(file.path)}
+                        className="inline-flex items-center px-2 py-1 rounded bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600 hover:text-white transition-colors text-[11px]"
+                      >
+                        <Eye className="h-3 w-3 mr-1" /> View Source
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -214,6 +225,15 @@ export function FileListTable({ repositoryId }: FileListTableProps) {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Source Viewer Modal */}
+      {selectedFileForView && (
+        <SourceViewerModal
+          repositoryId={repositoryId}
+          filePath={selectedFileForView}
+          onClose={() => setSelectedFileForView(null)}
+        />
       )}
     </div>
   );
