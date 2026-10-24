@@ -1,0 +1,22 @@
+{
+  "name": "@repolens/indexing-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/worker.js",
+  "types": "./dist/worker.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node ./dist/worker.js"
+  },
+  "dependencies": {
+    "@repolens/shared": "*",
+    "@repolens/code-analyzer": "*",
+    "@repolens/graph-engine": "*",
+    "@repolens/retrieval": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

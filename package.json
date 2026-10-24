@@ -1,0 +1,24 @@
+{
+  "name": "repolens-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RepoLens - AI-Powered Code Intelligence Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run build --workspace=@repolens/shared --workspace=@repolens/code-analyzer --workspace=@repolens/graph-engine --workspace=@repolens/retrieval",
+    "build:apps": "npm run build --workspace=@repolens/indexing-worker --workspace=@repolens/api --workspace=@repolens/web",
+    "build": "npm run build:packages && npm run build:apps",
+    "dev:api": "npm run dev --workspace=@repolens/api",
+    "dev:web": "npm run dev --workspace=@repolens/web",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
