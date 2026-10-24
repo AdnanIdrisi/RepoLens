@@ -159,8 +159,25 @@ export const TraceStepSchema = z.object({
   endLine: z.number().int().positive(),
   label: z.string(),
   relationship: z.string(),
+  category: z.string().optional(),
+  snippet: z.string().optional(),
   confidence: z.number().min(0).max(1).default(1.0),
   evidence: z.string().optional()
+});
+
+export const TraceRequestSchema = z.object({
+  method: z.string().optional(),
+  path: z.string().optional(),
+  routeId: z.string().optional(),
+  symbolId: z.string().optional(),
+  maxDepth: z.number().int().min(1).max(20).default(6)
+});
+
+export const TraceResponseSchema = z.object({
+  route: RouteRecordSchema.optional(),
+  steps: z.array(TraceStepSchema),
+  totalSteps: z.number().int().nonnegative(),
+  isComplete: z.boolean()
 });
 
 // Search Schemas

@@ -12,6 +12,8 @@ import {
   CodeChunkSchema,
   RouteRecordSchema,
   TraceStepSchema,
+  TraceRequestSchema,
+  TraceResponseSchema,
   SearchRequestSchema,
   SearchResultItemSchema,
   SearchResponseSchema
@@ -50,6 +52,8 @@ export type GraphEdgeEvidence = z.infer<typeof GraphEdgeEvidenceSchema>;
 export type CodeChunk = z.infer<typeof CodeChunkSchema>;
 export type RouteRecord = z.infer<typeof RouteRecordSchema>;
 export type TraceStep = z.infer<typeof TraceStepSchema>;
+export type TraceRequest = z.infer<typeof TraceRequestSchema>;
+export type TraceResponse = z.infer<typeof TraceResponseSchema>;
 export type SearchRequest = z.infer<typeof SearchRequestSchema>;
 export type SearchResultItem = z.infer<typeof SearchResultItemSchema>;
 export type SearchResponse = z.infer<typeof SearchResponseSchema>;
