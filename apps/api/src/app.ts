@@ -4,6 +4,7 @@ import { env } from "./config/env.js";
 import { requestLoggerMiddleware } from "./middleware/request-logger.middleware.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { healthRouter } from "./modules/health/health.routes.js";
+import { createRepositoryRouter } from "./modules/repositories/repository.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -21,6 +22,7 @@ export function createApp(): Express {
 
   // Mount API modules
   app.use("/api", healthRouter);
+  app.use("/api", createRepositoryRouter());
 
   // Central error handling
   app.use(errorMiddleware);

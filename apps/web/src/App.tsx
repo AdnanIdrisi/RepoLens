@@ -12,6 +12,9 @@ import {
   Terminal,
   Activity
 } from "lucide-react";
+import { RepositoryIngestionForm } from "./features/repositories/RepositoryIngestionForm";
+import { JobProgressCard } from "./features/repositories/JobProgressCard";
+import { FileListTable } from "./features/repositories/FileListTable";
 
 type ActiveTab = "repos" | "graph" | "search" | "trace" | "agent" | "impact";
 
@@ -23,7 +26,9 @@ interface HealthStatus {
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("repos");
-  const [repoUrl, setRepoUrl] = useState("https://github.com/expressjs/express");
+  const [activeRepoId, setActiveRepoId] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [isIngesting, setIsIngesting] = useState(false);
   const [health, setHealth] = useState<HealthStatus>({
     api: "checking",
     db: "checking"
@@ -59,6 +64,12 @@ export function App() {
     const interval = setInterval(checkHealth, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleIngestionStarted = (repositoryId: string, jobId: string) => {
+    setActiveRepoId(repositoryId);
+    setActiveJobId(jobId);
+    setIsIngesting(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100">
@@ -188,40 +199,26 @@ export function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "repos" && (
           <div className="space-y-8">
-            {/* Hero Banner */}
-            <div className="relative overflow-hidden rounded-2xl border border-indigo-500/20 bg-gradient-to-b from-indigo-950/40 to-slate-900/60 p-8 shadow-2xl backdrop-blur-xl">
-              <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative max-w-3xl">
-                <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-white">
-                  Deterministic Code Intelligence Meets LLM Reasoning
-                </h1>
-                <p className="mt-3 text-base text-slate-300">
-                  Analyze unfamiliar codebases with precision. Parse syntax trees, resolve imports and symbols, build navigable relationship graphs, and query code using hybrid semantic search and grounded AI agent reasoning.
-                </p>
+            {/* Repository Ingestion Hero Form */}
+            <RepositoryIngestionForm
+              onIngestionStarted={handleIngestionStarted}
+              isLoading={isIngesting}
+            />
 
-                {/* Ingestion URL Form (Module 1 Target) */}
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                      <GitFork className="h-5 w-5" />
-                    </div>
-                    <input
-                      type="url"
-                      value={repoUrl}
-                      onChange={(e) => setRepoUrl(e.target.value)}
-                      placeholder="https://github.com/owner/repository"
-                      className="block w-full rounded-xl border border-slate-700/80 bg-slate-900/90 pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-inner"
-                    />
-                  </div>
-                  <button
-                    onClick={() => alert("Module 1 Ingestion Pipeline will execute here.")}
-                    className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/30 transition-all hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  >
-                    Ingest Repository
-                  </button>
-                </div>
-              </div>
-            </div>
+            {/* Active Job Progress */}
+            {activeJobId && (
+              <JobProgressCard
+                jobId={activeJobId}
+                onJobCompleted={() => {
+                  setIsIngesting(false);
+                }}
+              />
+            )}
+
+            {/* Discovered Files Table */}
+            {activeRepoId && (
+              <FileListTable repositoryId={activeRepoId} />
+            )}
 
             {/* Architecture Modules Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -260,7 +257,7 @@ export function App() {
             <div className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-6">
               <div className="flex items-center space-x-2 text-slate-400 text-sm font-semibold mb-3">
                 <Terminal className="h-4 w-4 text-indigo-400" />
-                <span>Monorepo Foundation Status (Module 0)</span>
+                <span>RepoLens Code Intelligence Pipeline</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
                 <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
@@ -268,16 +265,16 @@ export function App() {
                   <span className="text-indigo-300 font-semibold">@repolens/monorepo</span>
                 </div>
                 <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-500 block">API Service</span>
-                  <span className="text-emerald-400 font-semibold">Express 4.21 + TS</span>
+                  <span className="text-slate-500 block">Ingestion Pipeline</span>
+                  <span className="text-emerald-400 font-semibold">GitHub Trees API</span>
                 </div>
                 <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-500 block">Frontend</span>
-                  <span className="text-cyan-400 font-semibold">React 18 + Vite + Tailwind</span>
+                  <span className="text-slate-500 block">File Filtering</span>
+                  <span className="text-cyan-400 font-semibold">Whitelist + Exclusions</span>
                 </div>
                 <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-500 block">Shared Engine</span>
-                  <span className="text-purple-400 font-semibold">Zod Schemas + Types</span>
+                  <span className="text-slate-500 block">Commit Resolution</span>
+                  <span className="text-purple-400 font-semibold">Deterministic SHA</span>
                 </div>
               </div>
             </div>
@@ -302,7 +299,7 @@ export function App() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 bg-slate-950/60 py-6 text-center text-xs text-slate-500">
-        <p>RepoLens - AI Code Intelligence Platform &bull; Phase 0 Foundation Complete</p>
+        <p>RepoLens - AI Code Intelligence Platform &bull; Module 1 GitHub Ingestion Active</p>
       </footer>
     </div>
   );
