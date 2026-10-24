@@ -15,6 +15,7 @@ import {
 import { RepositoryIngestionForm } from "./features/repositories/RepositoryIngestionForm";
 import { JobProgressCard } from "./features/repositories/JobProgressCard";
 import { FileListTable } from "./features/repositories/FileListTable";
+import { ArchitecturePage } from "./features/architecture/ArchitecturePage";
 
 type ActiveTab = "repos" | "graph" | "search" | "trace" | "agent" | "impact";
 
@@ -281,7 +282,27 @@ export function App() {
           </div>
         )}
 
-        {activeTab !== "repos" && (
+        {activeTab === "graph" && (
+          activeRepoId ? (
+            <ArchitecturePage repositoryId={activeRepoId} />
+          ) : (
+            <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
+              <Network className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-200">No Repository Selected</h3>
+              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
+                Please ingest or select a GitHub repository from the Repositories tab first to explore its code relationship graph.
+              </p>
+              <button
+                onClick={() => setActiveTab("repos")}
+                className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
+              >
+                Go to Repositories
+              </button>
+            </div>
+          )
+        )}
+
+        {activeTab !== "repos" && activeTab !== "graph" && (
           <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
             <h3 className="text-xl font-bold text-slate-200">Feature Module Under Construction</h3>
             <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
