@@ -10,6 +10,7 @@ import { createGraphRouter } from "./modules/graph/graph.routes.js";
 import { createRetrievalRouter } from "./modules/retrieval/retrieval.routes.js";
 import { createTracingRouter } from "./modules/tracing/tracing.routes.js";
 import { createImpactRouter } from "./modules/impact/impact.routes.js";
+import { createAgentRouter } from "./modules/agent/agent.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -33,6 +34,7 @@ export function createApp(): Express {
   app.use("/api", createRetrievalRouter());
   app.use("/api", createTracingRouter());
   app.use("/api", createImpactRouter());
+  app.use("/api", createAgentRouter());
 
   // Central error handling
   app.use(errorMiddleware);

@@ -245,4 +245,40 @@ export const ImpactReportSchema = z.object({
   )
 });
 
+// Agent & Conversation Schemas
+export const AgentCitationSchema = z.object({
+  filePath: z.string(),
+  startLine: z.number().int().positive(),
+  endLine: z.number().int().positive(),
+  snippet: z.string().optional()
+});
+
+export const AgentToolCallSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  args: z.record(z.unknown()),
+  result: z.unknown().optional()
+});
+
+export const AgentMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(["user", "assistant", "system"]),
+  content: z.string(),
+  toolCalls: z.array(AgentToolCallSchema).optional(),
+  citations: z.array(AgentCitationSchema).optional(),
+  createdAt: z.date().or(z.string())
+});
+
+export const AgentChatRequestSchema = z.object({
+  message: z.string().min(1).max(2000),
+  conversationId: z.string().optional()
+});
+
+export const AgentChatResponseSchema = z.object({
+  conversationId: z.string(),
+  message: AgentMessageSchema,
+  iterations: z.number().int().nonnegative()
+});
+
+
 

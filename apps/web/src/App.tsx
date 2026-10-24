@@ -19,6 +19,7 @@ import { ArchitecturePage } from "./features/architecture/ArchitecturePage";
 import { CodeSearchPage } from "./features/code-search/CodeSearchPage";
 import { FlowTracingPage } from "./features/flow-tracing/FlowTracingPage";
 import { ImpactAnalysisPage } from "./features/impact-analysis/ImpactAnalysisPage";
+import { AgentChatPage } from "./features/agent/AgentChatPage";
 
 type ActiveTab = "repos" | "graph" | "search" | "trace" | "agent" | "impact";
 
@@ -365,19 +366,24 @@ export function App() {
           )
         )}
 
-        {activeTab !== "repos" && activeTab !== "graph" && activeTab !== "search" && activeTab !== "trace" && activeTab !== "impact" && (
-          <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
-            <h3 className="text-xl font-bold text-slate-200">Feature Module Under Construction</h3>
-            <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
-              This module will be connected as we implement the plan step by step according to the execution rules.
-            </p>
-            <button
-              onClick={() => setActiveTab("repos")}
-              className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
-            >
-              Return to Ingestion Overview
-            </button>
-          </div>
+        {activeTab === "agent" && (
+          activeRepoId ? (
+            <AgentChatPage repositoryId={activeRepoId} />
+          ) : (
+            <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
+              <Bot className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-slate-200">No Repository Selected</h3>
+              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
+                Please ingest or select a GitHub repository from the Repositories tab first to converse with the Gemini AI Agent.
+              </p>
+              <button
+                onClick={() => setActiveTab("repos")}
+                className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
+              >
+                Go to Repositories
+              </button>
+            </div>
+          )
         )}
       </main>
 

@@ -19,7 +19,12 @@ import {
   SearchResponseSchema,
   ImpactRequestSchema,
   AffectedEntitySchema,
-  ImpactReportSchema
+  ImpactReportSchema,
+  AgentCitationSchema,
+  AgentToolCallSchema,
+  AgentMessageSchema,
+  AgentChatRequestSchema,
+  AgentChatResponseSchema
 } from "../schemas/index.js";
 import {
   REPOSITORY_STATUSES,
@@ -63,6 +68,11 @@ export type SearchResponse = z.infer<typeof SearchResponseSchema>;
 export type ImpactRequest = z.infer<typeof ImpactRequestSchema>;
 export type AffectedEntity = z.infer<typeof AffectedEntitySchema>;
 export type ImpactReport = z.infer<typeof ImpactReportSchema>;
+export type AgentCitation = z.infer<typeof AgentCitationSchema>;
+export type AgentToolCall = z.infer<typeof AgentToolCallSchema>;
+export type AgentMessage = z.infer<typeof AgentMessageSchema>;
+export type AgentChatRequest = z.infer<typeof AgentChatRequestSchema>;
+export type AgentChatResponse = z.infer<typeof AgentChatResponseSchema>;
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
