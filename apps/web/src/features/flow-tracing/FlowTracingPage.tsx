@@ -123,24 +123,24 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
     const upper = method.toUpperCase();
     switch (upper) {
       case "GET":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono">GET</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#059669] text-white border border-[#059669] font-mono">GET</span>;
       case "POST":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 font-mono">POST</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#4f46e5] text-white border border-[#4f46e5] font-mono">POST</span>;
       case "PUT":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 font-mono">PUT</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#d97706] text-white border border-[#d97706] font-mono">PUT</span>;
       case "DELETE":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30 font-mono">DEL</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#dc2626] text-white border border-[#dc2626] font-mono">DEL</span>;
       default:
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-500/15 text-slate-400 border border-slate-500/30 font-mono">{upper}</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#25334d] text-slate-200 border border-[#25334d] font-mono">{upper}</span>;
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Top Banner and Route Indexing Button */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-[#25334d] bg-[#131b2e]">
         <div className="flex items-center space-x-3">
-          <div className="h-9 w-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-[#1a243b] text-[#0891b2] border border-[#25334d] flex items-center justify-center">
             <Workflow className="h-5 w-5" />
           </div>
           <div>
@@ -156,20 +156,20 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
         <button
           onClick={handleIndexRoutes}
           disabled={indexing}
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700/80 transition-all disabled:opacity-50"
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#1a243b] hover:bg-[#25334d] text-slate-200 text-xs font-medium border border-[#25334d] transition-all disabled:opacity-50"
         >
           {indexing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-400" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0891b2]" />
           ) : (
-            <Layers className="h-3.5 w-3.5 text-indigo-400" />
+            <Layers className="h-3.5 w-3.5 text-[#0891b2]" />
           )}
           <span>{indexing ? "Discovering Routes..." : "Discover / Re-Index Routes"}</span>
         </button>
       </div>
 
       {/* Disclaimer Alert */}
-      <div className="p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 text-slate-300 text-xs flex items-center space-x-2.5">
-        <Info className="h-4 w-4 text-indigo-400 flex-shrink-0" />
+      <div className="p-3 rounded-xl border border-[#25334d] bg-[#131b2e] text-slate-300 text-xs flex items-center space-x-2.5">
+        <Info className="h-4 w-4 text-[#0891b2] flex-shrink-0" />
         <span>
           <strong>Static Analysis Notice:</strong> Execution paths are inferred statically from AST declarations, middlewares, and call references. They represent static architectural flows rather than runtime telemetry.
         </span>
@@ -177,8 +177,8 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
 
       {/* Error Alert */}
       {error && (
-        <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-sm flex items-center space-x-2">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+        <div className="p-4 rounded-xl border border-[#dc2626] bg-[#131b2e] text-rose-300 text-sm flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 flex-shrink-0 text-[#dc2626]" />
           <span>{error}</span>
         </div>
       )}
@@ -186,7 +186,7 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
       {/* Main Grid: Route List Sidebar + Trace Flow Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Discovered Routes List (4 columns) */}
-        <div className="lg:col-span-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+        <div className="lg:col-span-4 rounded-xl border border-[#25334d] bg-[#131b2e] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider">
               Discovered Routes ({routes.length})
@@ -201,13 +201,13 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
               value={routeSearch}
               onChange={(e) => setRouteSearch(e.target.value)}
               placeholder="Filter routes..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-200 placeholder-slate-500 text-xs focus:outline-none focus:border-slate-700"
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-[#090d16] border border-[#25334d] text-slate-200 placeholder-slate-500 text-xs focus:outline-none focus:border-[#4f46e5]"
             />
           </div>
 
           {loadingRoutes ? (
             <div className="py-12 flex flex-col items-center justify-center text-slate-500 text-xs">
-              <Loader2 className="h-5 w-5 animate-spin text-indigo-500 mb-2" />
+              <Loader2 className="h-5 w-5 animate-spin text-[#4f46e5] mb-2" />
               <span>Scanning routes...</span>
             </div>
           ) : filteredRoutes.length === 0 ? (
@@ -224,15 +224,15 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
                     onClick={() => setSelectedRoute(r)}
                     className={`w-full text-left p-2.5 rounded-lg transition-all flex items-center justify-between text-xs border ${
                       isSelected
-                        ? "bg-indigo-600/20 border-indigo-500/50 text-white shadow-sm"
-                        : "bg-slate-900/60 border-slate-800/80 text-slate-300 hover:bg-slate-800/60 hover:text-white"
+                        ? "bg-[#1a243b] border-[#4f46e5] text-white shadow-sm"
+                        : "bg-[#090d16] border-[#25334d] text-slate-300 hover:bg-[#1a243b] hover:text-white"
                     }`}
                   >
                     <div className="flex items-center space-x-2 min-w-0">
                       {getMethodBadge(r.method)}
                       <span className="font-mono font-medium truncate">{r.path}</span>
                     </div>
-                    <ChevronRight className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${isSelected ? "text-indigo-400 translate-x-0.5" : "text-slate-600"}`} />
+                    <ChevronRight className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${isSelected ? "text-[#0891b2] translate-x-0.5" : "text-slate-600"}`} />
                   </button>
                 );
               })}
@@ -241,11 +241,11 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
         </div>
 
         {/* Right: Ordered Execution Flow Timeline (8 columns) */}
-        <div className="lg:col-span-8 rounded-xl border border-slate-800 bg-slate-900/40 p-6">
+        <div className="lg:col-span-8 rounded-xl border border-[#25334d] bg-[#131b2e] p-6">
           {selectedRoute ? (
             <div className="space-y-6">
               {/* Active Route Header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#25334d]">
                 <div className="flex items-center space-x-3">
                   {getMethodBadge(selectedRoute.method)}
                   <span className="text-base font-mono font-bold text-white tracking-tight">

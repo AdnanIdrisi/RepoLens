@@ -24,45 +24,45 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
     switch (category) {
       case "route":
         return {
-          bg: "bg-purple-500/15 border-purple-500/30 text-purple-300",
+          bg: "bg-[#9333ea] border-[#9333ea] text-white",
           icon: Workflow,
           label: "Route Entry",
-          dot: "bg-purple-500"
+          dot: "bg-[#9333ea]"
         };
       case "middleware":
         return {
-          bg: "bg-amber-500/15 border-amber-500/30 text-amber-300",
+          bg: "bg-[#d97706] border-[#d97706] text-white",
           icon: ShieldCheck,
           label: "Middleware",
-          dot: "bg-amber-500"
+          dot: "bg-[#d97706]"
         };
       case "controller":
         return {
-          bg: "bg-cyan-500/15 border-cyan-500/30 text-cyan-300",
+          bg: "bg-[#0891b2] border-[#0891b2] text-white",
           icon: Terminal,
           label: "Controller Handler",
-          dot: "bg-cyan-500"
+          dot: "bg-[#0891b2]"
         };
       case "service":
         return {
-          bg: "bg-indigo-500/15 border-indigo-500/30 text-indigo-300",
+          bg: "bg-[#4f46e5] border-[#4f46e5] text-white",
           icon: Cpu,
           label: "Business Service",
-          dot: "bg-indigo-500"
+          dot: "bg-[#4f46e5]"
         };
       case "model":
         return {
-          bg: "bg-emerald-500/15 border-emerald-500/30 text-emerald-300",
+          bg: "bg-[#059669] border-[#059669] text-white",
           icon: Database,
           label: "Database / Model",
-          dot: "bg-emerald-500"
+          dot: "bg-[#059669]"
         };
       default:
         return {
-          bg: "bg-slate-500/15 border-slate-500/30 text-slate-300",
+          bg: "bg-[#25334d] border-[#25334d] text-slate-200",
           icon: HelpCircle,
           label: "Unresolved / External",
-          dot: "bg-slate-500"
+          dot: "bg-[#25334d]"
         };
     }
   };
@@ -75,7 +75,7 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
     <div className="relative pl-8 pb-6 last:pb-0">
       {/* Connecting Vertical Timeline Line */}
       {!isLast && (
-        <div className="absolute left-3.5 top-8 bottom-0 w-0.5 bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900" />
+        <div className="absolute left-3.5 top-8 bottom-0 w-0.5 bg-[#25334d]" />
       )}
 
       {/* Timeline Node Badge */}
@@ -84,11 +84,11 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
       </div>
 
       {/* Card Content */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/70 hover:border-slate-700 transition-all shadow-md overflow-hidden">
+      <div className="rounded-xl border border-[#25334d] bg-[#131b2e] hover:border-[#4f46e5] transition-all shadow-md overflow-hidden">
         {/* Step Header */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-slate-950/40 border-b border-slate-800/80">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-[#1a243b] border-b border-[#25334d]">
           <div className="flex items-center space-x-2.5">
-            <span className="text-[11px] font-mono text-slate-500 font-bold">
+            <span className="text-[11px] font-mono text-slate-400 font-bold">
               #{index + 1}
             </span>
             <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${config.bg}`}>
@@ -101,12 +101,12 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
 
           <div className="flex items-center space-x-3 text-xs">
             {step.confidence === 1.0 ? (
-              <span className="flex items-center space-x-1 text-[11px] text-emerald-400 font-mono">
+              <span className="flex items-center space-x-1 text-[11px] text-[#059669] font-mono font-medium">
                 <CheckCircle2 className="h-3 w-3" />
                 <span>Direct AST</span>
               </span>
             ) : (
-              <span className="flex items-center space-x-1 text-[11px] text-amber-400 font-mono">
+              <span className="flex items-center space-x-1 text-[11px] text-[#d97706] font-mono font-medium">
                 <AlertTriangle className="h-3 w-3" />
                 <span>Inferred</span>
               </span>
@@ -115,7 +115,7 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
             {step.filePath !== "external" && (
               <button
                 onClick={() => onSelectFile(step.filePath)}
-                className="flex items-center space-x-1 text-slate-400 hover:text-indigo-400 font-mono text-[11px] transition-colors"
+                className="flex items-center space-x-1 text-slate-300 hover:text-[#0891b2] font-mono text-[11px] transition-colors"
               >
                 <FileCode className="h-3 w-3" />
                 <span>{step.filePath}:{step.startLine}</span>
@@ -126,13 +126,13 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
         </div>
 
         {/* Evidence / Relationship Description */}
-        <div className="px-4 py-2 text-xs text-slate-400 bg-slate-900/40 flex items-center justify-between border-b border-slate-800/40">
+        <div className="px-4 py-2 text-xs text-slate-300 bg-[#131b2e] flex items-center justify-between border-b border-[#25334d]">
           <div className="flex items-center space-x-1.5 font-mono text-[11px]">
-            <span className="text-slate-500">Relationship:</span>
-            <span className="text-indigo-300 font-semibold">{step.relationship}</span>
+            <span className="text-slate-400">Relationship:</span>
+            <span className="text-[#0891b2] font-semibold">{step.relationship}</span>
           </div>
           {step.evidence && (
-            <span className="text-[11px] text-slate-500 italic">
+            <span className="text-[11px] text-slate-400 italic">
               {step.evidence}
             </span>
           )}
@@ -140,14 +140,14 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
 
         {/* Code Excerpt Snippet */}
         {snippetLines.length > 0 && (
-          <div className="p-3 bg-[#0a0e17] overflow-x-auto text-xs font-mono text-slate-300">
+          <div className="p-3 bg-[#090d16] overflow-x-auto text-xs font-mono text-slate-300">
             <table className="w-full border-collapse">
               <tbody>
                 {snippetLines.map((line, idx) => {
                   const lineNumber = step.startLine + idx;
                   return (
-                    <tr key={idx} className="hover:bg-slate-800/30 leading-5">
-                      <td className="w-8 pr-2 text-right select-none text-slate-600 font-mono text-[11px]">
+                    <tr key={idx} className="hover:bg-[#1a243b] leading-5">
+                      <td className="w-8 pr-2 text-right select-none text-slate-500 font-mono text-[11px]">
                         {lineNumber}
                       </td>
                       <td className="whitespace-pre pl-2 font-mono text-slate-200">

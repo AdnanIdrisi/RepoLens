@@ -8,24 +8,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: "#eef2ff",
-          100: "#e0e7ff",
-          200: "#c7d2fe",
-          300: "#a5b4fc",
-          400: "#818cf8",
-          500: "#6366f1",
-          600: "#4f46e5",
-          700: "#4338ca",
-          800: "#3730a3",
-          900: "#312e81",
-          950: "#1e1b4b",
+        canvas: {
+          DEFAULT: "#090d16",
+          ground: "#090d16",
         },
-        surface: {
-          dark: "#0b0f19",
-          card: "#111827",
-          border: "#1f2937",
-          hover: "#1e293b",
+        panel: {
+          DEFAULT: "#131b2e",
+          low: "#0f1523",
+          high: "#1a243b",
+          highest: "#222f4c",
+        },
+        border: {
+          solid: "#25334d",
+          muted: "#1a243b",
+          focus: "#4f46e5",
+        },
+        accent: {
+          indigo: "#4f46e5",
+          "indigo-hover": "#4338ca",
+          cyan: "#0891b2",
+          emerald: "#059669",
+          amber: "#d97706",
+          rose: "#dc2626",
+        },
+        content: {
+          primary: "#f8fafc",
+          muted: "#94a3b8",
+          tertiary: "#475569",
         }
       },
       fontFamily: {

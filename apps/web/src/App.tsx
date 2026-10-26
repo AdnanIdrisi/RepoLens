@@ -1,17 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
-  GitFork, 
   Network, 
   Search, 
   Workflow, 
-  Bot, 
-  ShieldAlert, 
-  CheckCircle2, 
-  AlertCircle,
   FolderGit2,
   Terminal,
-  Activity
+  ExternalLink
 } from "lucide-react";
+import { Sidebar, ActiveTab, RepositorySummary } from "./components/Sidebar";
 import { RepositoryIngestionForm } from "./features/repositories/RepositoryIngestionForm";
 import { JobProgressCard } from "./features/repositories/JobProgressCard";
 import { FileListTable } from "./features/repositories/FileListTable";
@@ -21,8 +17,6 @@ import { FlowTracingPage } from "./features/flow-tracing/FlowTracingPage";
 import { ImpactAnalysisPage } from "./features/impact-analysis/ImpactAnalysisPage";
 import { AgentChatPage } from "./features/agent/AgentChatPage";
 
-type ActiveTab = "repos" | "graph" | "search" | "trace" | "agent" | "impact";
-
 interface HealthStatus {
   api: "checking" | "online" | "offline";
   db: "checking" | "connected" | "disconnected";
@@ -30,7 +24,8 @@ interface HealthStatus {
 }
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("repos");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("graph");
+  const [repositories, setRepositories] = useState<RepositorySummary[]>([]);
   const [activeRepoId, setActiveRepoId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [isIngesting, setIsIngesting] = useState(false);
@@ -39,7 +34,50 @@ export function App() {
     db: "checking"
   });
 
+  // Fetch analyzed repositories
+  const fetchRepositories = useCallback(async () => {
+    try {
+      const res = await fetch("/api/repositories");
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const repos: RepositorySummary[] = json.data.map((r: {
+            id?: string;
+            _id?: string;
+            fullName?: string;
+            owner?: string;
+            name?: string;
+            defaultBranch?: string;
+            status?: string;
+            commitSha?: string;
+            activeIndexVersion?: string;
+          }) => ({
+            id: r.id || r._id || "",
+            fullName: r.fullName || `${r.owner}/${r.name}`,
+            defaultBranch: r.defaultBranch || "main",
+            status: r.status || "ready",
+            commitSha: r.commitSha,
+            activeIndexVersion: r.activeIndexVersion
+          }));
+          setRepositories(repos);
+
+          // Auto-select first repo if none selected yet
+          if (repos.length > 0) {
+            setActiveRepoId((prev) => prev || repos[0].id);
+          } else {
+            setActiveTab("repos");
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch repositories:", err);
+    }
+  }, []);
+
+  // System Health Polling
   useEffect(() => {
+    fetchRepositories();
+
     async function checkHealth() {
       try {
         const res = await fetch("/api/health");
@@ -68,329 +106,246 @@ export function App() {
     checkHealth();
     const interval = setInterval(checkHealth, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchRepositories]);
 
   const handleIngestionStarted = (repositoryId: string, jobId: string) => {
     setActiveRepoId(repositoryId);
     setActiveJobId(jobId);
     setIsIngesting(true);
+    fetchRepositories();
+  };
+
+  const handleJobCompleted = () => {
+    setIsIngesting(false);
+    fetchRepositories();
+  };
+
+  const activeRepo = repositories.find((r) => r.id === activeRepoId) || repositories[0];
+
+  const getTabTitle = (tab: ActiveTab) => {
+    switch (tab) {
+      case "repos":
+        return "Repository Management & Ingestion";
+      case "graph":
+        return "P1.1 Code Relationship Graph";
+      case "search":
+        return "P1.2 Semantic & Hybrid Code Search";
+      case "trace":
+        return "P1.3 Static Execution Flow Tracing";
+      case "agent":
+        return "P1.4 Gemini AI Code Agent";
+      case "impact":
+        return "P1.5 Change Impact Analysis";
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100">
-      {/* Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <FolderGit2 className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
-                RepoLens
-              </span>
-              <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                v0.1.0-alpha
-              </span>
-            </div>
+    <div className="flex h-screen w-screen overflow-hidden bg-[#090d16] text-[#f8fafc]">
+      {/* LEFT SIDEBAR NAVIGATION */}
+      <Sidebar
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        repositories={repositories}
+        activeRepoId={activeRepoId}
+        onSelectRepo={setActiveRepoId}
+        health={health}
+      />
+
+      {/* MAIN WORKSTATION AREA */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#090d16] relative">
+        {/* Top Control / Breadcrumb Bar */}
+        <header className="h-12 px-6 bg-[#131b2e] border-b border-[#25334d] flex items-center justify-between shrink-0 z-20">
+          <div className="flex items-center space-x-2 text-xs font-mono">
+            <span className="text-[#94a3b8]">RepoLens</span>
+            <span className="text-[#475569]">/</span>
+            <span className="text-[#f8fafc] font-semibold">{getTabTitle(activeTab)}</span>
+
+            {activeRepo && (
+              <>
+                <span className="text-[#475569]">/</span>
+                <span className="bg-[#1a243b] text-[#0891b2] px-2 py-0.5 rounded border border-[#25334d] text-[11px] font-semibold">
+                  {activeRepo.fullName}
+                </span>
+              </>
+            )}
           </div>
 
-          {/* Navigation Tabs */}
-          <nav className="hidden md:flex space-x-1">
-            <button
-              onClick={() => setActiveTab("repos")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 ${
-                activeTab === "repos"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-              }`}
-            >
-              <GitFork className="h-4 w-4" />
-              <span>Repositories</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("graph")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 ${
-                activeTab === "graph"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-              }`}
-            >
-              <Network className="h-4 w-4" />
-              <span>Graph (P1.1)</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("search")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 ${
-                activeTab === "search"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-              }`}
-            >
-              <Search className="h-4 w-4" />
-              <span>Search (P1.2)</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("trace")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 ${
-                activeTab === "trace"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-              }`}
-            >
-              <Workflow className="h-4 w-4" />
-              <span>Tracing (P1.3)</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("agent")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 ${
-                activeTab === "agent"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-              }`}
-            >
-              <Bot className="h-4 w-4" />
-              <span>Agent (P1.4)</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("impact")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center space-x-1.5 ${
-                activeTab === "impact"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-              }`}
-            >
-              <ShieldAlert className="h-4 w-4" />
-              <span>Impact (P1.5)</span>
-            </button>
-          </nav>
-
-          {/* Status indicators */}
-          <div className="flex items-center space-x-3 text-xs">
-            <div className="flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700/60">
-              <span className="text-slate-400">API:</span>
-              {health.api === "online" ? (
-                <span className="text-emerald-400 flex items-center font-medium">
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Ready
-                </span>
-              ) : health.api === "checking" ? (
-                <span className="text-amber-400 flex items-center font-medium">
-                  <Activity className="h-3.5 w-3.5 mr-1 animate-spin" /> Checking
-                </span>
-              ) : (
-                <span className="text-rose-400 flex items-center font-medium">
-                  <AlertCircle className="h-3.5 w-3.5 mr-1" /> Offline
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center space-x-1.5 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700/60">
-              <span className="text-slate-400">DB:</span>
-              {health.db === "connected" ? (
-                <span className="text-emerald-400 flex items-center font-medium">
-                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Connected
-                </span>
-              ) : (
-                <span className="text-amber-400 flex items-center font-medium">
-                  <AlertCircle className="h-3.5 w-3.5 mr-1" /> Standby
-                </span>
-              )}
-            </div>
+          <div className="flex items-center space-x-3 text-xs font-mono">
+            {activeRepo && activeTab !== "repos" && (
+              <button
+                onClick={() => setActiveTab("repos")}
+                className="text-[#94a3b8] hover:text-[#f8fafc] flex items-center gap-1 transition-colors"
+                title="Manage or switch repositories"
+              >
+                <span>Switch Repo</span>
+                <ExternalLink className="h-3 w-3" />
+              </button>
+            )}
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === "repos" && (
-          <div className="space-y-8">
-            {/* Repository Ingestion Hero Form */}
-            <RepositoryIngestionForm
-              onIngestionStarted={handleIngestionStarted}
-              isLoading={isIngesting}
-            />
-
-            {/* Active Job Progress */}
-            {activeJobId && (
-              <JobProgressCard
-                jobId={activeJobId}
-                onJobCompleted={() => {
-                  setIsIngesting(false);
-                }}
+        {/* Dynamic Feature Workstation */}
+        <main className="flex-1 w-full h-[calc(100vh-48px)] overflow-hidden relative">
+          {activeTab === "repos" && (
+            <div className="h-full overflow-y-auto p-6 space-y-6 max-w-6xl mx-auto">
+              {/* Repository Ingestion Hero Form */}
+              <RepositoryIngestionForm
+                onIngestionStarted={handleIngestionStarted}
+                isLoading={isIngesting}
               />
-            )}
 
-            {/* Discovered Files Table */}
-            {activeRepoId && (
-              <FileListTable repositoryId={activeRepoId} />
-            )}
+              {/* Active Job Progress */}
+              {activeJobId && (
+                <JobProgressCard
+                  jobId={activeJobId}
+                  onJobCompleted={handleJobCompleted}
+                />
+              )}
 
-            {/* Architecture Modules Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-sm">
-                <div className="h-10 w-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
-                  <Network className="h-5 w-5" />
-                </div>
-                <h2 className="text-lg font-semibold text-white">P1.1 Code Relationship Graph</h2>
-                <p className="mt-2 text-sm text-slate-400">
-                  Interactive node-link graph visualizing files, functions, classes, imports, and calls with source-anchored navigation.
-                </p>
-              </div>
+              {/* Discovered Files Table */}
+              {activeRepoId && (
+                <FileListTable repositoryId={activeRepoId} />
+              )}
 
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-sm">
-                <div className="h-10 w-10 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-4">
-                  <Search className="h-5 w-5" />
+              {/* Architecture Capabilities Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div
+                  onClick={() => setActiveTab("graph")}
+                  className="rounded border border-[#25334d] bg-[#131b2e] p-5 hover:border-[#4f46e5] cursor-pointer transition-colors"
+                >
+                  <div className="h-9 w-9 rounded bg-[#1a243b] text-[#818cf8] border border-[#25334d] flex items-center justify-center mb-3">
+                    <Network className="h-4 w-4" />
+                  </div>
+                  <h3 className="text-sm font-bold text-[#f8fafc] font-mono">P1.1 Code Graph</h3>
+                  <p className="mt-1 text-xs text-[#94a3b8] leading-relaxed">
+                    Interactive node-link graph visualizing files, functions, classes, and calls with bounded neighborhood depth.
+                  </p>
                 </div>
-                <h2 className="text-lg font-semibold text-white">P1.2 Semantic & Hybrid Search</h2>
-                <p className="mt-2 text-sm text-slate-400">
-                  Vector similarity combined with lexical ranking to locate implementations, identifier occurrences, and route definitions.
-                </p>
-              </div>
 
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-sm">
-                <div className="h-10 w-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-4">
-                  <Workflow className="h-5 w-5" />
+                <div
+                  onClick={() => setActiveTab("search")}
+                  className="rounded border border-[#25334d] bg-[#131b2e] p-5 hover:border-[#4f46e5] cursor-pointer transition-colors"
+                >
+                  <div className="h-9 w-9 rounded bg-[#1a243b] text-[#22d3ee] border border-[#25334d] flex items-center justify-center mb-3">
+                    <Search className="h-4 w-4" />
+                  </div>
+                  <h3 className="text-sm font-bold text-[#f8fafc] font-mono">P1.2 Semantic Search</h3>
+                  <p className="mt-1 text-xs text-[#94a3b8] leading-relaxed">
+                    Reciprocal Rank Fusion uniting vector embeddings with exact lexical matching for deep implementation retrieval.
+                  </p>
                 </div>
-                <h2 className="text-lg font-semibold text-white">P1.3 Static Flow Tracing</h2>
-                <p className="mt-2 text-sm text-slate-400">
-                  Statically traces Express routes through middlewares, controllers, service functions, and data-access layers.
-                </p>
-              </div>
-            </div>
 
-            {/* System Status / Foundation Info */}
-            <div className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-6">
-              <div className="flex items-center space-x-2 text-slate-400 text-sm font-semibold mb-3">
-                <Terminal className="h-4 w-4 text-indigo-400" />
-                <span>RepoLens Code Intelligence Pipeline</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
-                <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-500 block">Workspace</span>
-                  <span className="text-indigo-300 font-semibold">@repolens/monorepo</span>
-                </div>
-                <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-500 block">Ingestion Pipeline</span>
-                  <span className="text-emerald-400 font-semibold">GitHub Trees API</span>
-                </div>
-                <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-500 block">File Filtering</span>
-                  <span className="text-cyan-400 font-semibold">Whitelist + Exclusions</span>
-                </div>
-                <div className="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
-                  <span className="text-slate-500 block">Commit Resolution</span>
-                  <span className="text-purple-400 font-semibold">Deterministic SHA</span>
+                <div
+                  onClick={() => setActiveTab("trace")}
+                  className="rounded border border-[#25334d] bg-[#131b2e] p-5 hover:border-[#4f46e5] cursor-pointer transition-colors"
+                >
+                  <div className="h-9 w-9 rounded bg-[#1a243b] text-[#34d399] border border-[#25334d] flex items-center justify-center mb-3">
+                    <Workflow className="h-4 w-4" />
+                  </div>
+                  <h3 className="text-sm font-bold text-[#f8fafc] font-mono">P1.3 Flow Tracing</h3>
+                  <p className="mt-1 text-xs text-[#94a3b8] leading-relaxed">
+                    Statically traces HTTP route handlers across middlewares, controllers, services, and database queries.
+                  </p>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
 
-        {activeTab === "graph" && (
-          activeRepoId ? (
-            <ArchitecturePage repositoryId={activeRepoId} />
-          ) : (
-            <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
-              <Network className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-slate-200">No Repository Selected</h3>
-              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
-                Please ingest or select a GitHub repository from the Repositories tab first to explore its code relationship graph.
-              </p>
-              <button
-                onClick={() => setActiveTab("repos")}
-                className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
-              >
-                Go to Repositories
-              </button>
+              {/* Pipeline Telemetry Card */}
+              <div className="rounded border border-[#25334d] bg-[#0f1523] p-4 text-xs font-mono">
+                <div className="flex items-center space-x-2 text-[#94a3b8] font-semibold mb-3">
+                  <Terminal className="h-4 w-4 text-[#4f46e5]" />
+                  <span>RepoLens Multi-Stage Analysis Pipeline</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-[#131b2e] p-2.5 rounded border border-[#25334d]">
+                    <span className="text-[#475569] block text-[10px]">PARSER</span>
+                    <span className="text-[#818cf8] font-semibold">Tree-sitter AST</span>
+                  </div>
+                  <div className="bg-[#131b2e] p-2.5 rounded border border-[#25334d]">
+                    <span className="text-[#475569] block text-[10px]">INGESTION</span>
+                    <span className="text-[#34d399] font-semibold">GitHub Trees API</span>
+                  </div>
+                  <div className="bg-[#131b2e] p-2.5 rounded border border-[#25334d]">
+                    <span className="text-[#475569] block text-[10px]">EMBEDDINGS</span>
+                    <span className="text-[#22d3ee] font-semibold">Gemini 768-dim</span>
+                  </div>
+                  <div className="bg-[#131b2e] p-2.5 rounded border border-[#25334d]">
+                    <span className="text-[#475569] block text-[10px]">INDEXING</span>
+                    <span className="text-[#c084fc] font-semibold">Blob Differencing</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          )
-        )}
+          )}
 
-        {activeTab === "search" && (
-          activeRepoId ? (
-            <CodeSearchPage repositoryId={activeRepoId} />
-          ) : (
-            <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
-              <Search className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-slate-200">No Repository Selected</h3>
-              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
-                Please ingest or select a GitHub repository from the Repositories tab first to perform semantic and hybrid code search.
-              </p>
-              <button
-                onClick={() => setActiveTab("repos")}
-                className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
-              >
-                Go to Repositories
-              </button>
-            </div>
-          )
-        )}
+          {activeTab === "graph" && (
+            activeRepoId ? (
+              <ArchitecturePage repositoryId={activeRepoId} />
+            ) : (
+              <NoRepoSelected onGoToRepos={() => setActiveTab("repos")} feature="Code Relationship Graph" />
+            )
+          )}
 
-        {activeTab === "trace" && (
-          activeRepoId ? (
-            <FlowTracingPage repositoryId={activeRepoId} />
-          ) : (
-            <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
-              <Workflow className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-slate-200">No Repository Selected</h3>
-              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
-                Please ingest or select a GitHub repository from the Repositories tab first to perform static execution flow tracing.
-              </p>
-              <button
-                onClick={() => setActiveTab("repos")}
-                className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
-              >
-                Go to Repositories
-              </button>
-            </div>
-          )
-        )}
+          {activeTab === "search" && (
+            activeRepoId ? (
+              <div className="h-full overflow-y-auto p-6 max-w-6xl mx-auto">
+                <CodeSearchPage repositoryId={activeRepoId} />
+              </div>
+            ) : (
+              <NoRepoSelected onGoToRepos={() => setActiveTab("repos")} feature="Semantic Code Search" />
+            )
+          )}
 
-        {activeTab === "impact" && (
-          activeRepoId ? (
-            <ImpactAnalysisPage repositoryId={activeRepoId} />
-          ) : (
-            <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
-              <ShieldAlert className="h-12 w-12 text-rose-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-slate-200">No Repository Selected</h3>
-              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
-                Please ingest or select a GitHub repository from the Repositories tab first to perform change impact analysis.
-              </p>
-              <button
-                onClick={() => setActiveTab("repos")}
-                className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
-              >
-                Go to Repositories
-              </button>
-            </div>
-          )
-        )}
+          {activeTab === "trace" && (
+            activeRepoId ? (
+              <div className="h-full overflow-y-auto p-6 max-w-6xl mx-auto">
+                <FlowTracingPage repositoryId={activeRepoId} />
+              </div>
+            ) : (
+              <NoRepoSelected onGoToRepos={() => setActiveTab("repos")} feature="Execution Flow Tracing" />
+            )
+          )}
 
-        {activeTab === "agent" && (
-          activeRepoId ? (
-            <AgentChatPage repositoryId={activeRepoId} />
-          ) : (
-            <div className="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/80">
-              <Bot className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-slate-200">No Repository Selected</h3>
-              <p className="text-slate-400 text-sm mt-2 max-w-md mx-auto">
-                Please ingest or select a GitHub repository from the Repositories tab first to converse with the Gemini AI Agent.
-              </p>
-              <button
-                onClick={() => setActiveTab("repos")}
-                className="mt-6 inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
-              >
-                Go to Repositories
-              </button>
-            </div>
-          )
-        )}
-      </main>
+          {activeTab === "impact" && (
+            activeRepoId ? (
+              <div className="h-full overflow-y-auto p-6 max-w-6xl mx-auto">
+                <ImpactAnalysisPage repositoryId={activeRepoId} />
+              </div>
+            ) : (
+              <NoRepoSelected onGoToRepos={() => setActiveTab("repos")} feature="Change Impact Analysis" />
+            )
+          )}
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-950/60 py-6 text-center text-xs text-slate-500">
-        <p>RepoLens - AI Code Intelligence Platform &bull; Module 1 GitHub Ingestion Active</p>
-      </footer>
+          {activeTab === "agent" && (
+            activeRepoId ? (
+              <div className="h-full overflow-hidden p-6 max-w-6xl mx-auto flex flex-col">
+                <AgentChatPage repositoryId={activeRepoId} />
+              </div>
+            ) : (
+              <NoRepoSelected onGoToRepos={() => setActiveTab("repos")} feature="Gemini AI Agent" />
+            )
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function NoRepoSelected({ onGoToRepos, feature }: { onGoToRepos: () => void; feature: string }) {
+  return (
+    <div className="h-full flex items-center justify-center p-6 text-center">
+      <div className="max-w-md p-8 bg-[#131b2e] border border-[#25334d] rounded space-y-4">
+        <FolderGit2 className="h-10 w-10 text-[#4f46e5] mx-auto" />
+        <h3 className="text-base font-bold text-[#f8fafc] font-mono">No Repository Active</h3>
+        <p className="text-xs text-[#94a3b8] leading-relaxed">
+          Please select or ingest a repository to use <span className="text-[#f8fafc] font-semibold">{feature}</span>.
+        </p>
+        <button
+          onClick={onGoToRepos}
+          className="px-4 py-2 rounded bg-[#4f46e5] hover:bg-[#4338ca] text-white text-xs font-semibold font-mono transition-colors"
+        >
+          Go to Repositories
+        </button>
+      </div>
     </div>
   );
 }
