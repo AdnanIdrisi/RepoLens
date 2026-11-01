@@ -83,21 +83,19 @@ export function CodeSearchPage({ repositoryId }: CodeSearchPageProps) {
     setHasSearched(true);
 
     try {
-      const params = new URLSearchParams({
-        q: query.trim(),
+      const payload = {
+        query: query.trim(),
         matchType,
-        limit: "20"
+        limit: 20,
+        path: pathFilter.trim() || undefined,
+        symbolKinds: selectedKind !== "all" ? [selectedKind] : undefined
+      };
+
+      const res = await fetch(`/api/repositories/${repositoryId}/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
-
-      if (selectedKind !== "all") {
-        params.append("kind", selectedKind);
-      }
-
-      if (pathFilter.trim()) {
-        params.append("path", pathFilter.trim());
-      }
-
-      const res = await fetch(`/api/repositories/${repositoryId}/search?${params.toString()}`);
       const data = await res.json();
 
       if (res.ok && data.success) {

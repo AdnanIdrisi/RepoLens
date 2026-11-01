@@ -5,8 +5,9 @@ export function createRetrievalRouter(controller?: RetrievalController): Router 
   const router = Router();
   const retrievalController = controller || new RetrievalController();
 
-  // POST /api/repositories/:id/search
+  // POST & GET /api/repositories/:id/search
   router.post("/repositories/:id/search", retrievalController.search);
+  router.get("/repositories/:id/search", retrievalController.search);
 
   // POST /api/repositories/:id/search/index
   router.post("/repositories/:id/search/index", retrievalController.indexChunks);

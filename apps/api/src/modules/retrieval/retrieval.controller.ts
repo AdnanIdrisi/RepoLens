@@ -13,7 +13,24 @@ export class RetrievalController {
   public search = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const repositoryId = req.params.id;
-      const parsedBody = SearchRequestSchema.parse(req.body);
+      const rawInput =
+        req.method === "GET"
+          ? {
+              query: (req.query.query as string) || (req.query.q as string) || "",
+              matchType: req.query.matchType || "hybrid",
+              limit: req.query.limit ? Number(req.query.limit) : 10,
+              path: (req.query.path as string) || undefined,
+              symbolKinds: req.query.symbolKinds
+                ? Array.isArray(req.query.symbolKinds)
+                  ? (req.query.symbolKinds as string[])
+                  : [req.query.symbolKinds as string]
+                : req.query.kind && req.query.kind !== "all"
+                ? [req.query.kind as string]
+                : undefined
+            }
+          : req.body;
+
+      const parsedBody = SearchRequestSchema.parse(rawInput);
 
       const response = await this.retrievalService.search(repositoryId, parsedBody);
       res.json({

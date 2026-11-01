@@ -14,7 +14,9 @@
     "@repolens/shared": "*",
     "@repolens/code-analyzer": "*",
     "@repolens/graph-engine": "*",
-    "@repolens/retrieval": "*"
+    "@repolens/retrieval": "*",
+    "dotenv": "^16.4.7",
+    "mongoose": "^8.9.5"
   },
   "devDependencies": {
     "typescript": "^5.7.3"
