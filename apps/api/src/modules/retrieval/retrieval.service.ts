@@ -106,6 +106,18 @@ export class RetrievalService {
       allChunksToUpsert[i].embeddingModel = this.embeddingProvider.modelName;
     }
 
+    // Ensure text index does not treat code languages (e.g. jsx, tsx) as natural language overrides
+    try {
+      await CodeChunkModel.syncIndexes();
+    } catch {
+      try {
+        await CodeChunkModel.collection.dropIndex("code_chunks_text_index");
+        await CodeChunkModel.createIndexes();
+      } catch {
+        // Ignore if collection or index does not exist yet
+      }
+    }
+
     // Bulk upsert to MongoDB
     const ops = allChunksToUpsert.map((c) => ({
       updateOne: {

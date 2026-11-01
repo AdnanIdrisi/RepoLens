@@ -10,15 +10,16 @@ export interface GeminiEmbeddingOptions {
 }
 
 export class GeminiEmbeddingProvider implements EmbeddingProvider {
-  public readonly modelName: string;
+  public modelName: string;
   public readonly dimensions: number;
   private readonly batchSize: number;
   private client: GoogleGenAI | null = null;
   private fallbackProvider = new MockEmbeddingProvider();
+  private hasWarnedBatch = false;
 
   constructor(options: GeminiEmbeddingOptions = {}) {
     const apiKey = options.apiKey || process.env.GEMINI_API_KEY;
-    this.modelName = options.modelName || "text-embedding-004";
+    this.modelName = options.modelName || process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
     this.dimensions = options.dimensions || 768;
     this.batchSize = options.batchSize || 10;
 
@@ -45,10 +46,12 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
         const batchVectors = await this.embedBatchWithRetry(batch);
         allEmbeddings.push(...batchVectors);
       } catch (err) {
-        console.warn(
-          `[GeminiEmbeddingProvider] Batch embedding failed, falling back to deterministic local mock for batch ${i}:`,
-          err instanceof Error ? err.message : String(err)
-        );
+        if (!this.hasWarnedBatch) {
+          console.warn(
+            `[GeminiEmbeddingProvider] Remote embedding unavailable (${err instanceof Error ? err.message : String(err)}). Falling back to deterministic local mock vectors for index.`
+          );
+          this.hasWarnedBatch = true;
+        }
         const fallbackVectors = await this.fallbackProvider.embedDocuments(batch);
         allEmbeddings.push(...fallbackVectors);
       }
@@ -63,12 +66,28 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
     }
 
     try {
-      const response = await this.client.models.embedContent({
-        model: this.modelName,
-        contents: [text]
-      });
+      let candidateModel = this.modelName;
+      let response;
+      try {
+        response = await this.client.models.embedContent({
+          model: candidateModel,
+          contents: [text]
+        });
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg.includes("404") || errMsg.includes("NOT_FOUND") || errMsg.includes("not found")) {
+          const altModel = candidateModel === "gemini-embedding-001" ? "text-embedding-004" : "gemini-embedding-001";
+          response = await this.client.models.embedContent({
+            model: altModel,
+            contents: [text]
+          });
+          this.modelName = altModel;
+        } else {
+          throw err;
+        }
+      }
 
-      const values = response.embeddings?.[0]?.values;
+      const values = response?.embeddings?.[0]?.values;
       if (values && values.length > 0) {
         return values.slice(0, this.dimensions);
       }
@@ -88,12 +107,32 @@ export class GeminiEmbeddingProvider implements EmbeddingProvider {
     let lastError: unknown;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const response = await this.client.models.embedContent({
-          model: this.modelName,
-          contents: batch
-        });
+        let candidateModel = this.modelName;
+        let response;
+        try {
+          response = await this.client.models.embedContent({
+            model: candidateModel,
+            contents: batch
+          });
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          if (errMsg.includes("404") || errMsg.includes("NOT_FOUND") || errMsg.includes("not found")) {
+            const altModel = candidateModel === "gemini-embedding-001" ? "text-embedding-004" : "gemini-embedding-001";
+            try {
+              response = await this.client.models.embedContent({
+                model: altModel,
+                contents: batch
+              });
+              this.modelName = altModel;
+            } catch {
+              throw err;
+            }
+          } else {
+            throw err;
+          }
+        }
 
-        if (response.embeddings && response.embeddings.length > 0) {
+        if (response?.embeddings && response.embeddings.length > 0) {
           return response.embeddings.map((e) =>
             (e.values || []).slice(0, this.dimensions)
           );

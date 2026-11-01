@@ -42,7 +42,12 @@ CodeChunkSchema.index({ repositoryId: 1, commitSha: 1, symbolKind: 1 });
 // Lexical text search index
 CodeChunkSchema.index(
   { text: "text", filePath: "text", symbolName: "text" },
-  { weights: { symbolName: 10, filePath: 5, text: 1 }, name: "code_chunks_text_index" }
+  {
+    weights: { symbolName: 10, filePath: 5, text: 1 },
+    name: "code_chunks_text_index",
+    default_language: "none",
+    language_override: "none"
+  }
 );
 
 export const CodeChunkModel = mongoose.model<CodeChunkDocument>("CodeChunk", CodeChunkSchema);
