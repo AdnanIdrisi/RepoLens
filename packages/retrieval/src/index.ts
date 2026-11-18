@@ -17,3 +17,17 @@ export * from "./embeddings/gemini-embedding.provider.js";
 export * from "./ranking/rrf.js";
 export * from "./ranking/deduplicator.js";
 export * from "./ranking/similarity.js";
+export * from "./ranking/candidate-ranker.js";
+
+// BM25 & Tokenization (Embedding-free lexical retrieval)
+export * from "./bm25/code-tokenizer.js";
+export * from "./bm25/bm25.engine.js";
+
+// Query Expansion
+export * from "./query/query-expander.js";
+
+// Relationship Traversal
+export * from "./traversal/graph-traverser.js";
+
+// Context Assembly & Token Budgeting
+export * from "./context/context-assembler.js";

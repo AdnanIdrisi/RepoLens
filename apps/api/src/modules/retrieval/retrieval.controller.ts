@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { RetrievalService } from "./retrieval.service.js";
 import { SearchRequestSchema } from "@repolens/shared";
 import { CodeChunkModel } from "./models/code-chunk.model.js";
+import { CodeEntityModel } from "./models/code-entity.model.js";
 
 export class RetrievalController {
   private retrievalService: RetrievalService;
@@ -58,19 +59,18 @@ export class RetrievalController {
   public getStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const repositoryId = req.params.id;
-      const totalChunks = await CodeChunkModel.countDocuments({ repositoryId });
-      const embeddedChunks = await CodeChunkModel.countDocuments({
-        repositoryId,
-        embedding: { $exists: true, $ne: [] }
-      });
+      const [totalChunks, totalEntities] = await Promise.all([
+        CodeChunkModel.countDocuments({ repositoryId }),
+        CodeEntityModel.countDocuments({ repositoryId })
+      ]);
 
       res.json({
         success: true,
         data: {
           repositoryId,
           totalChunks,
-          embeddedChunks,
-          isSearchReady: totalChunks > 0
+          totalEntities,
+          isSearchReady: (totalChunks + totalEntities) > 0
         }
       });
     } catch (error) {

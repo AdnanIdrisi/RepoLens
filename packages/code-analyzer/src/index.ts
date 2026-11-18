@@ -16,6 +16,7 @@ export * from "./extractors/functions.extractor.js";
 export * from "./extractors/classes.extractor.js";
 export * from "./extractors/calls.extractor.js";
 export * from "./extractors/routes.extractor.js";
+export * from "./extractors/entities.extractor.js";
 
 export * from "./diagnostics/parser.diagnostics.js";
 export * from "./symbols/symbol-identity.js";

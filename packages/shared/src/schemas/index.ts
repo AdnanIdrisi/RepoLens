@@ -139,6 +139,24 @@ export const CodeChunkSchema = z.object({
   embedding: z.array(z.number()).optional()
 });
 
+// Code Entity Schema (Embedding-free structural AST representation)
+export const CodeEntitySchema = z.object({
+  repositoryId: z.string(),
+  commitSha: z.string(),
+  entityId: z.string(),
+  filePath: z.string(),
+  entityType: z.string(), // "function" | "class" | "method" | "route" | "middleware" | "database_query" | "auth_check" | "error_handler" | "config" | "test"
+  entityName: z.string(),
+  startLine: z.number().int().positive(),
+  endLine: z.number().int().positive(),
+  parentEntity: z.string().nullable().optional(),
+  imports: z.array(z.string()).default([]),
+  calls: z.array(z.string()).default([]),
+  code: z.string(),
+  contentHash: z.string(),
+  docstring: z.string().optional()
+});
+
 // Route & Trace Record Schemas
 export const RouteRecordSchema = z.object({
   repositoryId: z.string(),

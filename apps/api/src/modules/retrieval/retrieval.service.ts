@@ -1,13 +1,18 @@
 import { CodeAnalyzer } from "@repolens/code-analyzer";
 import {
   StructuralChunker,
-  GeminiEmbeddingProvider,
-  ReciprocalRankFusion,
   SnippetDeduplicator,
-  cosineSimilarity,
-  EmbeddingProvider
+  BM25Engine,
+  QueryExpander,
+  CandidateRanker,
+  GraphTraverser,
+  ContextAssembler,
+  AssembledContext,
+  RankedCodeCandidate
 } from "@repolens/retrieval";
-import { CodeChunkModel, CodeChunkDocument } from "./models/code-chunk.model.js";
+import { CodeChunkModel } from "./models/code-chunk.model.js";
+import { CodeEntityModel } from "./models/code-entity.model.js";
+import { GraphEdgeModel } from "../graph/models/graph-edge.model.js";
 import { RepositoryModel } from "../repositories/models/repository.model.js";
 import { CodeFileModel } from "../repositories/models/code-file.model.js";
 import { MongoSourceStore } from "../files/mongo-source-store.js";
@@ -16,32 +21,25 @@ import type {
   SearchRequest,
   SearchResponse,
   SearchResultItem,
-  SearchMatchType
+  SearchMatchType,
+  CodeEntity
 } from "@repolens/shared";
-
-interface RankedInternalItem {
-  id: string;
-  doc: CodeChunkDocument;
-  score: number;
-}
 
 export class RetrievalService {
   private analyzer = new CodeAnalyzer();
   private chunker = new StructuralChunker();
-  private embeddingProvider: EmbeddingProvider;
-  private rrf = new ReciprocalRankFusion({ k: 60 });
   private deduplicator = new SnippetDeduplicator();
   private sourceStore: MongoSourceStore;
 
-  constructor(embeddingProvider?: EmbeddingProvider, sourceStore?: MongoSourceStore) {
-    this.embeddingProvider = embeddingProvider || new GeminiEmbeddingProvider();
+  constructor(sourceStore?: MongoSourceStore) {
     this.sourceStore = sourceStore || new MongoSourceStore();
   }
 
   /**
-   * Chunks, embeds, and indexes all eligible code files in a repository commit.
+   * Chunks and indexes all eligible code files into AST entities and structural chunks.
+   * Completely embedding-free: no external vector APIs or vector DB dependencies.
    */
-  public async indexChunks(repositoryId: string): Promise<{ chunksCount: number }> {
+  public async indexChunks(repositoryId: string): Promise<{ chunksCount: number; entitiesCount: number }> {
     const repo = await RepositoryModel.findById(repositoryId);
     if (!repo) {
       throw new ApiError(404, "NOT_FOUND", "Repository not found");
@@ -59,10 +57,11 @@ export class RetrievalService {
     });
 
     if (eligibleFiles.length === 0) {
-      return { chunksCount: 0 };
+      return { chunksCount: 0, entitiesCount: 0 };
     }
 
     const allChunksToUpsert = [];
+    const allEntitiesToUpsert: CodeEntity[] = [];
 
     for (const fileDoc of eligibleFiles) {
       const content = await this.sourceStore.getFile(repositoryId, commitSha, fileDoc.path);
@@ -71,8 +70,15 @@ export class RetrievalService {
       const analysis = this.analyzer.analyzeFile(fileDoc.path, content, repositoryId, commitSha);
       const chunks = this.chunker.chunkFile(analysis, content, repositoryId, commitSha);
 
-      // Map symbol info
+      // Collect AST Code Entities
+      for (const ent of analysis.entities) {
+        if (!ent.code || !ent.code.trim()) continue;
+        allEntitiesToUpsert.push(ent);
+      }
+
+      // Map symbol info for structural chunks
       for (const chunk of chunks) {
+        if (!chunk.text || !chunk.text.trim()) continue;
         let symbolName: string | undefined;
         let symbolKind: string | undefined;
 
@@ -93,50 +99,49 @@ export class RetrievalService {
       }
     }
 
-    if (allChunksToUpsert.length === 0) {
-      return { chunksCount: 0 };
-    }
-
-    // Compute embeddings in batches
-    const textsToEmbed = allChunksToUpsert.map((c) => `${c.filePath}\n${c.text}`);
-    const embeddings = await this.embeddingProvider.embedDocuments(textsToEmbed);
-
-    for (let i = 0; i < allChunksToUpsert.length; i++) {
-      allChunksToUpsert[i].embedding = embeddings[i];
-      allChunksToUpsert[i].embeddingModel = this.embeddingProvider.modelName;
-    }
-
-    // Ensure text index does not treat code languages (e.g. jsx, tsx) as natural language overrides
+    // Ensure MongoDB text index configuration is safe (no natural language override)
     try {
       await CodeChunkModel.syncIndexes();
+      await CodeEntityModel.syncIndexes();
     } catch {
-      try {
-        await CodeChunkModel.collection.dropIndex("code_chunks_text_index");
-        await CodeChunkModel.createIndexes();
-      } catch {
-        // Ignore if collection or index does not exist yet
-      }
+      // Safe fallback if indexes already synced
     }
 
-    // Bulk upsert to MongoDB
-    const ops = allChunksToUpsert.map((c) => ({
-      updateOne: {
-        filter: { repositoryId, commitSha, chunkId: c.chunkId },
-        update: { $set: c },
-        upsert: true
-      }
-    }));
+    // Stale cleanup: purge prior chunks and entities for this repository & commit
+    await Promise.all([
+      CodeChunkModel.deleteMany({ repositoryId, commitSha }),
+      CodeEntityModel.deleteMany({ repositoryId, commitSha })
+    ]);
 
-    await CodeChunkModel.bulkWrite(ops as never);
+    // Bulk upsert chunks
+    if (allChunksToUpsert.length > 0) {
+      const chunkOps = allChunksToUpsert.map((c) => ({
+        insertOne: { document: c }
+      }));
+      await CodeChunkModel.bulkWrite(chunkOps as never);
+    }
+
+    // Bulk upsert entities
+    if (allEntitiesToUpsert.length > 0) {
+      const entityOps = allEntitiesToUpsert.map((e) => ({
+        insertOne: { document: e }
+      }));
+      await CodeEntityModel.bulkWrite(entityOps as never);
+    }
 
     console.log(
-      `[RetrievalService] Indexed ${allChunksToUpsert.length} code chunks for repo ${repositoryId}.`
+      `[RetrievalService] Indexed ${allChunksToUpsert.length} structural chunks and ${allEntitiesToUpsert.length} code entities for repo ${repositoryId}.`
     );
-    return { chunksCount: allChunksToUpsert.length };
+
+    return {
+      chunksCount: allChunksToUpsert.length,
+      entitiesCount: allEntitiesToUpsert.length
+    };
   }
 
   /**
-   * Executes hybrid lexical + semantic search with Reciprocal Rank Fusion.
+   * Executes embedding-free, code-aware search combining Okapi BM25,
+   * query expansion, exact AST symbol boosting, and bounded graph traversal.
    */
   public async search(
     repositoryId: string,
@@ -152,85 +157,143 @@ export class RetrievalService {
       throw new ApiError(400, "BAD_REQUEST", "Repository has not completed commit resolution");
     }
 
-    const query = params.query.trim();
+    const rawQuery = params.query.trim();
     const limit = params.limit || 10;
     const requestedMatchType = params.matchType || "hybrid";
 
-    // 1. Perform Lexical Search
-    const lexicalCandidates: RankedInternalItem[] = [];
-    if (requestedMatchType === "hybrid" || requestedMatchType === "lexical") {
-      const lexicalMatches = await this.executeLexicalSearch(repositoryId, commitSha, query, params);
-      lexicalCandidates.push(...lexicalMatches);
+    // 1. Expand query using domain terminology mapping
+    const expanded = QueryExpander.expand(rawQuery);
+
+    // 2. Fetch candidates from MongoDB for this commit
+    const filter: Record<string, unknown> = { repositoryId, commitSha };
+    if (params.path) {
+      filter.filePath = { $regex: `^${escapeRegex(params.path)}`, $options: "i" };
+    }
+    if (params.symbolKinds && params.symbolKinds.length > 0) {
+      filter.symbolKind = { $in: params.symbolKinds };
     }
 
-    // 2. Perform Vector Search
-    const vectorCandidates: RankedInternalItem[] = [];
+    const [chunkDocs, entityDocs, graphEdges] = await Promise.all([
+      CodeChunkModel.find(filter).lean(),
+      CodeEntityModel.find({ repositoryId, commitSha }).lean(),
+      GraphEdgeModel.find({ repositoryId, commitSha }).lean()
+    ]);
+
+    // Build entity lookup map
+    const entitiesMap = new Map<string, CodeEntity>();
+    for (const ent of entityDocs) {
+      entitiesMap.set(ent.entityId, ent as unknown as CodeEntity);
+    }
+
+    // 3. Initialize in-memory BM25 Engine
+    const bm25Engine = new BM25Engine(1.5, 0.75);
+
+    // Index structural chunks into BM25
+    for (const doc of chunkDocs) {
+      bm25Engine.addDocument({
+        id: doc.chunkId,
+        filePath: doc.filePath,
+        entityName: doc.symbolName,
+        entityType: doc.symbolKind,
+        startLine: doc.startLine,
+        endLine: doc.endLine,
+        content: doc.text
+      });
+    }
+
+    // Index code entities into BM25
+    for (const ent of entityDocs) {
+      bm25Engine.addDocument({
+        id: ent.entityId,
+        filePath: ent.filePath,
+        entityName: ent.entityName,
+        entityType: ent.entityType,
+        startLine: ent.startLine,
+        endLine: ent.endLine,
+        content: ent.code
+      });
+    }
+
+    // 4. Execute BM25 search with query expansion
+    const bm25Results = bm25Engine.search(expanded.combinedQueryString, {
+      topK: Math.max(limit * 3, 30)
+    });
+
+    // 5. Apply deterministic symbol match, path match, and entity kind boosts
+    const rankedCandidates: RankedCodeCandidate[] = CandidateRanker.rankCandidates(
+      bm25Results,
+      expanded,
+      entitiesMap
+    );
+
+    // 6. Perform bounded graph relationship traversal if hybrid mode requested
+    let traversedCandidates = [];
     if (requestedMatchType === "hybrid" || requestedMatchType === "vector") {
-      const vectorMatches = await this.executeVectorSearch(repositoryId, commitSha, query, params);
-      vectorCandidates.push(...vectorMatches);
+      const topSeedEntities = rankedCandidates
+        .slice(0, 5)
+        .map((c) => c.entity);
+
+      traversedCandidates = GraphTraverser.traverseSupportingEntities(
+        topSeedEntities,
+        entitiesMap,
+        graphEdges.map((e) => ({
+          sourceId: e.sourceId,
+          targetId: e.targetId,
+          kind: e.kind
+        })),
+        2, // max 2 hops
+        6  // max supporting items
+      );
+
+      const existingIds = new Set(rankedCandidates.map((c) => c.entity.entityId));
+      for (const tc of traversedCandidates) {
+        if (!tc.isPrimarySeed && !existingIds.has(tc.entity.entityId)) {
+          existingIds.add(tc.entity.entityId);
+          rankedCandidates.push({
+            entity: tc.entity,
+            finalScore: Number((1.5 / tc.hopDistance).toFixed(4)),
+            bm25Score: 0.5,
+            symbolBonus: 0,
+            pathBonus: 0,
+            typeBonus: 0,
+            matchReasons: [`Graph relation: ${tc.relation || "CONNECTED"} from ${tc.sourceSeedName || "seed"}`]
+          });
+        }
+      }
     }
 
-    // 3. Rank Fusion
-    let fusedRankedItems: Array<{
-      item: RankedInternalItem;
-      rrfScore: number;
-      matchType: SearchMatchType;
-    }> = [];
-
-    if (requestedMatchType === "lexical") {
-      fusedRankedItems = lexicalCandidates.map((c) => ({
-        item: c,
-        rrfScore: c.score,
-        matchType: "lexical" as SearchMatchType
-      }));
-    } else if (requestedMatchType === "vector") {
-      fusedRankedItems = vectorCandidates.map((c) => ({
-        item: c,
-        rrfScore: c.score,
-        matchType: "vector" as SearchMatchType
-      }));
-    } else {
-      // Hybrid RRF
-      const fused = this.rrf.fuse(vectorCandidates, lexicalCandidates);
-      fusedRankedItems = fused.map((f) => ({
-        item: f.item,
-        rrfScore: f.rrfScore,
-        matchType: f.matchType
-      }));
-    }
-
-    // 4. Extract docs and deduplicate overlapping snippets in the same file
-    const deduplicationCandidates = fusedRankedItems.map((f) => ({
-      id: f.item.id,
-      filePath: f.item.doc.filePath,
-      startLine: f.item.doc.startLine,
-      endLine: f.item.doc.endLine,
-      fused: f
+    // 7. Deduplicate overlapping snippets
+    const deduplicationCandidates = rankedCandidates.map((c) => ({
+      id: c.entity.entityId,
+      filePath: c.entity.filePath,
+      startLine: c.entity.startLine,
+      endLine: c.entity.endLine,
+      candidate: c
     }));
 
     const deduplicated = this.deduplicator.deduplicate(deduplicationCandidates, 0.6);
 
-    // 5. Build final SearchResultItem list
+    // 8. Format final search results
     const results: SearchResultItem[] = deduplicated.slice(0, limit).map((d) => {
-      const doc = d.fused.item.doc;
+      const c = d.candidate;
       return {
-        chunkId: doc.chunkId,
-        filePath: doc.filePath,
-        symbolId: doc.symbolId,
-        symbolName: doc.symbolName,
-        symbolKind: doc.symbolKind,
-        startLine: doc.startLine,
-        endLine: doc.endLine,
-        snippet: doc.text,
-        score: d.fused.rrfScore,
-        matchType: d.fused.matchType,
+        chunkId: c.entity.entityId,
+        filePath: c.entity.filePath,
+        symbolId: c.entity.entityId,
+        symbolName: c.entity.entityName,
+        symbolKind: c.entity.entityType,
+        startLine: c.entity.startLine,
+        endLine: c.entity.endLine,
+        snippet: c.entity.code,
+        score: Number(c.finalScore.toFixed(4)),
+        matchType: requestedMatchType as SearchMatchType,
         repositoryId,
         commitSha
       };
     });
 
     return {
-      query,
+      query: rawQuery,
       matchType: requestedMatchType,
       total: results.length,
       results
@@ -238,110 +301,75 @@ export class RetrievalService {
   }
 
   /**
-   * Executes lexical search with exact identifier and regex/substring boosting.
+   * Assembles evidence-grounded context blocks with exact file and line citations,
+   * bounded within the requested token budget for Gemini answer synthesis.
    */
-  private async executeLexicalSearch(
+  public async retrieveEvidenceContext(
     repositoryId: string,
-    commitSha: string,
     query: string,
-    params: SearchRequest
-  ): Promise<RankedInternalItem[]> {
-    const filter: Record<string, unknown> = {
-      repositoryId,
-      commitSha
-    };
-
-    if (params.path) {
-      filter.filePath = { $regex: `^${escapeRegex(params.path)}`, $options: "i" };
+    options: { maxCharacters?: number; maxEntities?: number } = {}
+  ): Promise<AssembledContext> {
+    const repo = await RepositoryModel.findById(repositoryId);
+    if (!repo || !repo.commitSha) {
+      throw new ApiError(404, "NOT_FOUND", "Repository or commit not found");
     }
 
-    if (params.symbolKinds && params.symbolKinds.length > 0) {
-      filter.symbolKind = { $in: params.symbolKinds };
+    const commitSha = repo.commitSha;
+    const expanded = QueryExpander.expand(query);
+
+    const [chunkDocs, entityDocs, graphEdges] = await Promise.all([
+      CodeChunkModel.find({ repositoryId, commitSha }).lean(),
+      CodeEntityModel.find({ repositoryId, commitSha }).lean(),
+      GraphEdgeModel.find({ repositoryId, commitSha }).lean()
+    ]);
+
+    const entitiesMap = new Map<string, CodeEntity>();
+    for (const ent of entityDocs) {
+      entitiesMap.set(ent.entityId, ent as unknown as CodeEntity);
     }
 
-    // Exact identifier or text match
-    const regexPattern = escapeRegex(query);
-    const searchFilter = {
-      ...filter,
-      $or: [
-        { symbolName: { $regex: regexPattern, $options: "i" } },
-        { filePath: { $regex: regexPattern, $options: "i" } },
-        { text: { $regex: regexPattern, $options: "i" } }
-      ]
-    };
-
-    const docs = await CodeChunkModel.find(searchFilter).limit(50);
-
-    return docs.map((doc) => {
-      let score = 0.1;
-      const lowerQuery = query.toLowerCase();
-
-      // Symbol exact name boost
-      if (doc.symbolName && doc.symbolName.toLowerCase() === lowerQuery) {
-        score += 1.0;
-      } else if (doc.symbolName && doc.symbolName.toLowerCase().includes(lowerQuery)) {
-        score += 0.5;
-      }
-
-      // File path match boost
-      if (doc.filePath.toLowerCase().includes(lowerQuery)) {
-        score += 0.3;
-      }
-
-      // Text occurrence boost
-      if (doc.text.toLowerCase().includes(lowerQuery)) {
-        score += 0.2;
-      }
-
-      return {
+    const bm25Engine = new BM25Engine();
+    for (const doc of chunkDocs) {
+      bm25Engine.addDocument({
         id: doc.chunkId,
-        doc,
-        score: Number(score.toFixed(4))
-      };
-    }).sort((a, b) => b.score - a.score);
-  }
-
-  /**
-   * Executes vector search using query embedding and cosine similarity or Atlas vector index.
-   */
-  private async executeVectorSearch(
-    repositoryId: string,
-    commitSha: string,
-    query: string,
-    params: SearchRequest
-  ): Promise<RankedInternalItem[]> {
-    const queryVector = await this.embeddingProvider.embedQuery(query);
-
-    const filter: Record<string, unknown> = {
-      repositoryId,
-      commitSha
-    };
-
-    if (params.path) {
-      filter.filePath = { $regex: `^${escapeRegex(params.path)}`, $options: "i" };
+        filePath: doc.filePath,
+        entityName: doc.symbolName,
+        entityType: doc.symbolKind,
+        startLine: doc.startLine,
+        endLine: doc.endLine,
+        content: doc.text
+      });
     }
 
-    if (params.symbolKinds && params.symbolKinds.length > 0) {
-      filter.symbolKind = { $in: params.symbolKinds };
+    for (const ent of entityDocs) {
+      bm25Engine.addDocument({
+        id: ent.entityId,
+        filePath: ent.filePath,
+        entityName: ent.entityName,
+        entityType: ent.entityType,
+        startLine: ent.startLine,
+        endLine: ent.endLine,
+        content: ent.code
+      });
     }
 
-    // Fetch candidate chunks that possess an embedding
-    const docs = await CodeChunkModel.find({
-      ...filter,
-      embedding: { $exists: true, $ne: [] }
-    }).limit(150);
+    const bm25Results = bm25Engine.search(expanded.combinedQueryString, { topK: 30 });
+    const ranked = CandidateRanker.rankCandidates(bm25Results, expanded, entitiesMap);
 
-    const scoredDocs = docs.map((doc) => {
-      const docVector = doc.embedding || [];
-      const score = cosineSimilarity(queryVector, docVector);
-      return {
-        id: doc.chunkId,
-        doc,
-        score: Number(score.toFixed(4))
-      };
-    });
+    const topSeeds = ranked.slice(0, 5).map((r) => r.entity);
+    const traversed = GraphTraverser.traverseSupportingEntities(
+      topSeeds,
+      entitiesMap,
+      graphEdges.map((e) => ({
+        sourceId: e.sourceId,
+        targetId: e.targetId,
+        kind: e.kind
+      })),
+      2,
+      6
+    );
 
-    return scoredDocs.sort((a, b) => b.score - a.score).slice(0, 50);
+    return ContextAssembler.assemble(ranked, traversed, options);
   }
 }
 

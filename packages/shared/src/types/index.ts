@@ -10,6 +10,7 @@ import {
   GraphEdgeSchema,
   GraphEdgeEvidenceSchema,
   CodeChunkSchema,
+  CodeEntitySchema,
   RouteRecordSchema,
   TraceStepSchema,
   TraceRequestSchema,
@@ -58,6 +59,7 @@ export type GraphNode = z.infer<typeof GraphNodeSchema>;
 export type GraphEdge = z.infer<typeof GraphEdgeSchema>;
 export type GraphEdgeEvidence = z.infer<typeof GraphEdgeEvidenceSchema>;
 export type CodeChunk = z.infer<typeof CodeChunkSchema>;
+export type CodeEntity = z.infer<typeof CodeEntitySchema>;
 export type RouteRecord = z.infer<typeof RouteRecordSchema>;
 export type TraceStep = z.infer<typeof TraceStepSchema>;
 export type TraceRequest = z.infer<typeof TraceRequestSchema>;

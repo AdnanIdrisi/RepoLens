@@ -21,7 +21,7 @@ interface CodeSearchPageProps {
 
 interface SearchStats {
   totalChunks: number;
-  embeddedChunks: number;
+  totalEntities?: number;
   isSearchReady: boolean;
 }
 
@@ -119,11 +119,11 @@ export function CodeSearchPage({ repositoryId }: CodeSearchPageProps) {
             <Database className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[#f8fafc]">Semantic & Hybrid Code Search (P1.2)</h2>
+            <h2 className="text-sm font-bold text-[#f8fafc]">Code-Aware Intelligence & Search (P1.2)</h2>
             <p className="text-xs text-[#94a3b8]">
               {stats?.isSearchReady
-                ? `${stats.totalChunks} structural chunks indexed (${stats.embeddedChunks} embedded)`
-                : "No embeddings indexed yet. Click to build vector embeddings for this revision."}
+                ? `${stats.totalChunks} structural chunks, ${stats.totalEntities ?? 0} AST code entities indexed`
+                : "No code index built yet. Click to index repository entities."}
             </p>
           </div>
         </div>
@@ -139,7 +139,7 @@ export function CodeSearchPage({ repositoryId }: CodeSearchPageProps) {
             ) : (
               <Layers className="h-3.5 w-3.5 text-[#4f46e5]" />
             )}
-            <span>{indexing ? "Indexing..." : "Build Embeddings"}</span>
+            <span>{indexing ? "Indexing..." : "Index Repository"}</span>
           </button>
         </div>
       </div>
@@ -183,7 +183,7 @@ export function CodeSearchPage({ repositoryId }: CodeSearchPageProps) {
               }`}
             >
               <Sparkles className="h-3 w-3" />
-              <span>Hybrid RRF</span>
+              <span>Code-Aware Hybrid</span>
             </button>
             <button
               type="button"
@@ -195,7 +195,7 @@ export function CodeSearchPage({ repositoryId }: CodeSearchPageProps) {
               }`}
             >
               <Binary className="h-3 w-3" />
-              <span>Semantic Vector</span>
+              <span>AST Traversal</span>
             </button>
             <button
               type="button"
@@ -207,7 +207,7 @@ export function CodeSearchPage({ repositoryId }: CodeSearchPageProps) {
               }`}
             >
               <Type className="h-3 w-3" />
-              <span>Lexical Exact</span>
+              <span>BM25 Lexical</span>
             </button>
           </div>
 

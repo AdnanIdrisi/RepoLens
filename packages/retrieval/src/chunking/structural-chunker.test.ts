@@ -52,6 +52,7 @@ describe("StructuralChunker", () => {
       classes: [],
       calls: [],
       routes: [],
+      entities: [],
       diagnostics: []
     };
 
@@ -82,6 +83,7 @@ describe("StructuralChunker", () => {
       classes: [],
       calls: [],
       routes: [],
+      entities: [],
       diagnostics: []
     };
 
@@ -129,6 +131,7 @@ describe("StructuralChunker", () => {
       classes: [],
       calls: [],
       routes: [],
+      entities: [],
       diagnostics: []
     };
 

@@ -5,8 +5,9 @@ import { FunctionsExtractor, ExtractedFunction } from "./extractors/functions.ex
 import { ClassesExtractor, ExtractedClass } from "./extractors/classes.extractor.js";
 import { CallsExtractor, ExtractedCall } from "./extractors/calls.extractor.js";
 import { RoutesExtractor, ExtractedRoute } from "./extractors/routes.extractor.js";
+import { EntitiesExtractor } from "./extractors/entities.extractor.js";
 import { ParserDiagnostic } from "./diagnostics/parser.diagnostics.js";
-import type { SymbolRecord } from "@repolens/shared";
+import type { SymbolRecord, CodeEntity } from "@repolens/shared";
 
 export interface FileAnalysisResult {
   filePath: string;
@@ -19,6 +20,7 @@ export interface FileAnalysisResult {
   calls: ExtractedCall[];
   routes: ExtractedRoute[];
   symbols: SymbolRecord[];
+  entities: CodeEntity[];
   diagnostics: ParserDiagnostic[];
 }
 
@@ -30,6 +32,7 @@ export class CodeAnalyzer {
   private classesExtractor: ClassesExtractor;
   private callsExtractor: CallsExtractor;
   private routesExtractor: RoutesExtractor;
+  private entitiesExtractor: EntitiesExtractor;
 
   constructor() {
     this.parser = new SourceParser();
@@ -39,6 +42,7 @@ export class CodeAnalyzer {
     this.classesExtractor = new ClassesExtractor();
     this.callsExtractor = new CallsExtractor();
     this.routesExtractor = new RoutesExtractor();
+    this.entitiesExtractor = new EntitiesExtractor();
   }
 
   /**
@@ -59,6 +63,7 @@ export class CodeAnalyzer {
     const classes = this.classesExtractor.extract(parsed, repositoryId, commitSha);
     const calls = this.callsExtractor.extract(parsed);
     const routes = this.routesExtractor.extract(parsed, repositoryId, commitSha);
+    const entities = this.entitiesExtractor.extract(parsed, imports, repositoryId, commitSha);
 
     // Build unified SymbolRecord list conforming to @repolens/shared
     const symbols: SymbolRecord[] = [];
@@ -142,6 +147,7 @@ export class CodeAnalyzer {
       calls,
       routes,
       symbols,
+      entities,
       diagnostics: parsed.diagnostics
     };
   }

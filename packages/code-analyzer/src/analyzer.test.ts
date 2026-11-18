@@ -109,4 +109,38 @@ export default calculateTotal;
     expect(exportNames).toContain("calculateTotal");
     expect(exportNames).toContain("default");
   });
+
+  it("extracts code entities with accurate line numbers, calls, and content hashes", () => {
+    const code = `
+import { db } from "./db.js";
+
+export async function processOrder(orderId: string) {
+  try {
+    const order = await db.findOrder(orderId);
+    return order;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+}
+
+app.post('/api/orders', processOrder);
+    `;
+
+    const result = analyzer.analyzeFile("src/orders.ts", code, "repo-1", "sha-1");
+
+    expect(result.entities).toBeDefined();
+    expect(result.entities.length).toBeGreaterThan(0);
+
+    const fnEntity = result.entities.find((e) => e.entityName === "processOrder" && e.entityType === "function");
+    expect(fnEntity).toBeDefined();
+    expect(fnEntity?.filePath).toBe("src/orders.ts");
+    expect(fnEntity?.startLine).toBe(4);
+    expect(fnEntity?.contentHash).toBeTruthy();
+    expect(fnEntity?.calls).toContain("db.findOrder");
+
+    const routeEntity = result.entities.find((e) => e.entityType === "route");
+    expect(routeEntity).toBeDefined();
+    expect(routeEntity?.entityName).toBe("POST /api/orders");
+  });
 });
