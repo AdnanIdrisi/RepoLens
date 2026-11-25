@@ -41,24 +41,24 @@ export function RepositoryIngestionForm({ onIngestionStarted, isLoading }: Repos
   };
 
   return (
-    <div className="rounded border border-[#25334d] bg-[#131b2e] p-6 shadow-none">
+    <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-6 shadow-xs">
       <div className="max-w-3xl">
-        <div className="flex items-center space-x-2 text-[#4f46e5] text-xs font-mono font-semibold tracking-wider uppercase mb-2">
+        <div className="flex items-center space-x-2 text-indigo-400 text-xs font-mono font-bold tracking-wider uppercase mb-2">
           <Sparkles className="h-4 w-4" />
           <span>Module 1 &bull; GitHub Repository Ingestion</span>
         </div>
         
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#f8fafc]">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 font-display">
           Ingest & Explore Any Public GitHub Repository
         </h1>
-        <p className="mt-1 text-xs text-[#94a3b8] leading-relaxed">
+        <p className="mt-1 text-xs text-slate-400 leading-relaxed font-mono">
           Enter a public repository URL. RepoLens will resolve the commit revision, discover the source tree, and classify files eligible for structural code intelligence.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div className="flex flex-col sm:flex-row gap-2.5">
             <div className="relative flex-1">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#475569]">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
                 <GitFork className="h-4 w-4" />
               </div>
               <input
@@ -68,7 +68,7 @@ export function RepositoryIngestionForm({ onIngestionStarted, isLoading }: Repos
                 placeholder="https://github.com/owner/repository"
                 required
                 disabled={isLoading}
-                className="block w-full rounded border border-[#25334d] bg-[#090d16] pl-9 pr-3 py-2 text-xs font-mono text-[#f8fafc] placeholder-[#475569] focus:border-[#4f46e5] focus:outline-none transition-colors disabled:opacity-50"
+                className="block w-full rounded-md border border-[#334155] bg-[#111827] pl-9 pr-3 py-2 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:bg-[#161f30] focus:outline-none transition-colors disabled:opacity-50 shadow-2xs"
               />
             </div>
 
@@ -79,14 +79,14 @@ export function RepositoryIngestionForm({ onIngestionStarted, isLoading }: Repos
                 onChange={(e) => setRef(e.target.value)}
                 placeholder="Branch / Ref"
                 disabled={isLoading}
-                className="block w-full rounded border border-[#25334d] bg-[#090d16] px-3 py-2 text-xs font-mono text-[#f8fafc] placeholder-[#475569] focus:border-[#4f46e5] focus:outline-none transition-colors disabled:opacity-50"
+                className="block w-full rounded-md border border-[#334155] bg-[#111827] px-3 py-2 text-xs font-mono text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:bg-[#161f30] focus:outline-none transition-colors disabled:opacity-50 shadow-2xs"
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex items-center justify-center rounded bg-[#4f46e5] px-5 py-2 text-xs font-semibold font-mono text-[#f8fafc] transition-colors hover:bg-[#4338ca] focus:outline-none disabled:opacity-50 shrink-0"
+              className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-5 py-2 text-xs font-semibold font-mono text-white transition-colors hover:bg-indigo-500 focus:outline-none disabled:opacity-50 shrink-0 shadow-xs"
             >
               {isLoading ? (
                 <>
@@ -100,7 +100,7 @@ export function RepositoryIngestionForm({ onIngestionStarted, isLoading }: Repos
           </div>
 
           {error && (
-            <div className="p-3 rounded bg-[#090d16] border border-[#dc2626] text-xs font-mono text-[#dc2626]">
+            <div className="p-3 rounded-md bg-rose-50 border border-rose-300 text-xs font-mono text-rose-700 font-medium">
               {error}
             </div>
           )}

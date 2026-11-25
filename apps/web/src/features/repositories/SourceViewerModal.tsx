@@ -56,22 +56,22 @@ export function SourceViewerModal({ repositoryId, filePath, onClose }: SourceVie
   const lines = data?.content ? data.content.split("\n") : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 select-none">
-      <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded border border-[#25334d] bg-[#131b2e] shadow-none overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs select-none">
+      <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-xl border border-[#1e293b] bg-[#0f172a] shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-3.5 border-b border-[#25334d] bg-[#0f1523]">
+        <div className="flex items-center justify-between p-3.5 border-b border-[#1e293b] bg-[#0b0f19]">
           <div className="flex items-center space-x-2.5">
-            <FileCode className="h-4 w-4 text-[#4f46e5]" />
+            <FileCode className="h-4 w-4 text-indigo-400" />
             <div>
-              <h3 className="text-xs font-bold font-mono text-[#f8fafc]">{filePath}</h3>
+              <h3 className="text-xs font-bold font-mono text-slate-100">{filePath}</h3>
               {data && (
-                <div className="flex items-center space-x-3 text-[10px] font-mono text-[#94a3b8] mt-0.5">
+                <div className="flex items-center space-x-3 text-[10px] font-mono text-slate-400 mt-0.5">
                   <span className="flex items-center">
-                    <Hash className="h-3 w-3 mr-0.5 text-[#475569]" />
+                    <Hash className="h-3 w-3 mr-0.5 text-slate-500" />
                     {data.totalLines} lines
                   </span>
                   <span className="flex items-center">
-                    <HardDrive className="h-3 w-3 mr-0.5 text-[#475569]" />
+                    <HardDrive className="h-3 w-3 mr-0.5 text-slate-500" />
                     {(data.sizeBytes / 1024).toFixed(1)} KB
                   </span>
                   <span className="truncate max-w-[200px]" title={data.contentHash}>
@@ -86,15 +86,15 @@ export function SourceViewerModal({ repositoryId, filePath, onClose }: SourceVie
             {data && (
               <button
                 onClick={handleCopy}
-                className="p-1 rounded bg-[#1a243b] border border-[#25334d] text-[#94a3b8] hover:text-[#f8fafc] hover:bg-[#25334d] transition-colors"
+                className="p-1 rounded-md bg-[#111827] border border-[#334155] text-slate-300 hover:text-white hover:bg-[#1e293b] transition-colors shadow-2xs"
                 title="Copy source code"
               >
-                {copied ? <Check className="h-3.5 w-3.5 text-[#059669]" /> : <Copy className="h-3.5 w-3.5 text-[#94a3b8]" />}
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-slate-400" />}
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-1 rounded bg-[#1a243b] border border-[#25334d] text-[#94a3b8] hover:text-[#f8fafc] hover:bg-[#25334d] transition-colors"
+              className="p-1 rounded-md bg-[#111827] border border-[#334155] text-slate-300 hover:text-white hover:bg-[#1e293b] transition-colors shadow-2xs"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -102,24 +102,24 @@ export function SourceViewerModal({ repositoryId, filePath, onClose }: SourceVie
         </div>
 
         {/* Modal Body / Code Content */}
-        <div className="flex-1 overflow-auto p-4 font-mono text-xs text-[#f8fafc] leading-relaxed bg-[#090d16]">
+        <div className="flex-1 overflow-auto p-4 font-mono text-xs text-slate-200 leading-relaxed bg-[#090d16]">
           {loading ? (
-            <div className="py-20 text-center text-[#94a3b8] text-xs">
+            <div className="py-20 text-center text-slate-500 text-xs">
               Retrieving and normalizing source code...
             </div>
           ) : error ? (
-            <div className="py-20 text-center text-[#dc2626] text-xs">
+            <div className="py-20 text-center text-rose-400 text-xs font-semibold">
               {error}
             </div>
           ) : (
             <table className="w-full border-collapse">
               <tbody>
                 {lines.map((line, idx) => (
-                  <tr key={idx} className="hover:bg-[#131b2e]">
-                    <td className="w-12 pr-4 text-right select-none text-[#475569] border-r border-[#25334d] text-[10px]">
+                  <tr key={idx} className="hover:bg-[#161f30] leading-5">
+                    <td className="w-12 pr-4 text-right select-none text-slate-600 border-r border-[#1e293b] text-[10px]">
                       {idx + 1}
                     </td>
-                    <td className="pl-4 whitespace-pre font-mono text-[11px] text-[#f8fafc]">
+                    <td className="pl-4 whitespace-pre font-mono text-[11px] text-slate-200">
                       {line || " "}
                     </td>
                   </tr>

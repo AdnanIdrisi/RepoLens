@@ -82,13 +82,13 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
   return (
     <div className="space-y-6">
       {/* Top Banner and Target Selector Form */}
-      <div className="p-6 rounded-xl border border-[#25334d] bg-[#131b2e] space-y-4">
+      <div className="p-6 rounded-xl border border-[#1e293b] bg-[#0f172a] space-y-4 shadow-xs">
         <div className="flex items-center space-x-3">
-          <div className="h-9 w-9 rounded-lg bg-[#1a243b] text-[#dc2626] border border-[#25334d] flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center">
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-white">Change Impact Analysis (P1.5)</h2>
+            <h2 className="text-sm font-bold text-slate-100 font-display">Change Impact Analysis (P1.5)</h2>
             <p className="text-xs text-slate-400">
               Estimate the blast radius of modifying a file or symbol by traversing the reverse dependency graph.
             </p>
@@ -98,22 +98,22 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
         {/* Input Bar */}
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <div className="flex-1 min-w-[280px]">
-            <label className="block text-xs font-medium text-slate-400 mb-1">
+            <label className="block text-xs font-semibold text-slate-400 mb-1">
               Select Target File to Modify:
             </label>
             {loadingFiles ? (
-              <div className="h-10 bg-[#090d16] rounded-xl border border-[#25334d] flex items-center px-3 text-xs text-slate-500">
-                <Loader2 className="h-3.5 w-3.5 animate-spin mr-2 text-[#4f46e5]" />
+              <div className="h-10 bg-[#111827] rounded-md border border-[#334155] flex items-center px-3 text-xs text-slate-400">
+                <Loader2 className="h-3.5 w-3.5 animate-spin mr-2 text-indigo-400" />
                 Loading repository files...
               </div>
             ) : (
               <select
                 value={selectedFile}
                 onChange={(e) => setSelectedFile(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#090d16] border border-[#25334d] text-white text-xs font-mono focus:outline-none focus:border-[#4f46e5]"
+                className="w-full px-3 py-2 rounded-md bg-[#111827] border border-[#334155] text-slate-100 text-xs font-mono focus:outline-none focus:border-indigo-500 shadow-2xs"
               >
                 {files.map((f) => (
-                  <option key={f.path} value={f.path}>
+                  <option key={f.path} value={f.path} className="bg-[#111827] text-slate-100">
                     {f.path}
                   </option>
                 ))}
@@ -122,16 +122,16 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
           </div>
 
           <div className="w-28">
-            <label className="block text-xs font-medium text-slate-400 mb-1">
+            <label className="block text-xs font-semibold text-slate-400 mb-1">
               Max Depth:
             </label>
             <select
               value={maxDepth}
               onChange={(e) => setMaxDepth(Number(e.target.value))}
-              className="w-full px-3 py-2 rounded-xl bg-[#090d16] border border-[#25334d] text-white text-xs font-mono focus:outline-none focus:border-[#4f46e5]"
+              className="w-full px-3 py-2 rounded-md bg-[#111827] border border-[#334155] text-slate-100 text-xs font-mono focus:outline-none focus:border-indigo-500 shadow-2xs"
             >
               {[1, 2, 3, 4, 5, 6].map((d) => (
-                <option key={d} value={d}>
+                <option key={d} value={d} className="bg-[#111827] text-slate-100">
                   {d} {d === 1 ? "layer" : "layers"}
                 </option>
               ))}
@@ -142,7 +142,7 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
             <button
               onClick={handleAnalyze}
               disabled={analyzing || !selectedFile}
-              className="px-5 py-2 rounded-xl bg-[#dc2626] hover:bg-[#b91c1c] text-white text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5 disabled:opacity-50 h-10 border border-[#dc2626]"
+              className="px-5 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs transition-all flex items-center space-x-1.5 disabled:opacity-50 h-9"
             >
               {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
               <span>{analyzing ? "Analyzing Blast Radius..." : "Analyze Impact"}</span>
@@ -153,8 +153,8 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
 
       {/* Error Alert */}
       {error && (
-        <div className="p-4 rounded-xl border border-[#dc2626] bg-[#131b2e] text-rose-300 text-sm flex items-center space-x-2">
-          <AlertCircle className="h-4 w-4 flex-shrink-0 text-[#dc2626]" />
+        <div className="p-4 rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-300 text-sm flex items-center space-x-2 font-medium">
+          <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-400" />
           <span>{error}</span>
         </div>
       )}
@@ -164,11 +164,11 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
         <div className="space-y-6">
           {/* Summary Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-[#25334d] bg-[#131b2e] p-4">
-              <span className="text-xs font-medium text-[#dc2626] uppercase tracking-wider block mb-1">
+            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4.5 shadow-xs">
+              <span className="text-xs font-bold text-rose-400 uppercase tracking-wider block mb-1">
                 Direct Dependencies
               </span>
-              <span className="text-2xl font-bold font-mono text-white">
+              <span className="text-2xl font-bold font-mono text-slate-100">
                 {report.directAffected.length}
               </span>
               <span className="text-xs text-slate-400 block mt-1">
@@ -176,11 +176,11 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
               </span>
             </div>
 
-            <div className="rounded-xl border border-[#25334d] bg-[#131b2e] p-4">
-              <span className="text-xs font-medium text-[#d97706] uppercase tracking-wider block mb-1">
+            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4.5 shadow-xs">
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block mb-1">
                 Indirect Ripple Effects
               </span>
-              <span className="text-2xl font-bold font-mono text-white">
+              <span className="text-2xl font-bold font-mono text-slate-100">
                 {report.indirectAffected.length}
               </span>
               <span className="text-xs text-slate-400 block mt-1">
@@ -188,11 +188,11 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
               </span>
             </div>
 
-            <div className="rounded-xl border border-[#25334d] bg-[#131b2e] p-4">
-              <span className="text-xs font-medium text-[#0891b2] uppercase tracking-wider block mb-1">
+            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4.5 shadow-xs">
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider block mb-1">
                 Suggested Test Suites
               </span>
-              <span className="text-2xl font-bold font-mono text-white">
+              <span className="text-2xl font-bold font-mono text-slate-100">
                 {report.suggestedTests.length}
               </span>
               <span className="text-xs text-slate-400 block mt-1">
@@ -202,33 +202,34 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
           </div>
 
           {/* Direct Affected Group */}
-          <div className="rounded-xl border border-[#25334d] bg-[#131b2e] p-5 space-y-3">
-            <div className="flex items-center space-x-2 text-rose-300 font-semibold text-xs uppercase tracking-wider">
-              <AlertCircle className="h-4 w-4 text-[#dc2626]" />
+          <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5 space-y-3 shadow-xs">
+            <div className="flex items-center space-x-2 text-rose-400 font-bold text-xs uppercase tracking-wider">
+              <AlertCircle className="h-4 w-4 text-rose-400" />
               <span>Directly Affected Files (Layer 1 - Distance 1)</span>
             </div>
 
             {report.directAffected.length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-2">
+              <p className="text-xs text-slate-500 italic py-2">
                 No direct reverse dependencies detected in indexed codebase.
               </p>
             ) : (
-              <div className="divide-y divide-[#25334d]">
+              <div className="divide-y divide-[#1e293b]">
                 {report.directAffected.map((a) => (
                   <div key={a.id} className="py-2.5 flex items-center justify-between text-xs">
                     <div className="flex items-center space-x-2.5">
-                      <FileCode className="h-4 w-4 text-slate-400" />
+                      <FileCode className="h-4 w-4 text-slate-500" />
                       <button
                         onClick={() => setSelectedFileForModal(a.filePath)}
-                        className="font-mono text-slate-200 hover:text-[#0891b2] transition-colors font-medium hover:underline"
+                        className="font-mono text-slate-200 hover:text-indigo-400 transition-colors font-medium hover:underline"
                       >
                         {a.filePath}
                       </button>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#1a243b] text-slate-300 border border-[#25334d]">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#111827] text-slate-300 border border-[#334155] font-mono">
                         {a.kind}
                       </span>
                     </div>
-                    <span className="text-[11px] font-mono text-[#0891b2] bg-[#1a243b] px-2 py-0.5 rounded border border-[#25334d]">
+
+                    <span className="text-[11px] font-mono text-slate-300 bg-[#111827] px-2 py-0.5 rounded border border-[#334155] font-semibold">
                       {a.relationship || "imports"}
                     </span>
                   </div>
@@ -239,26 +240,26 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
 
           {/* Indirect Affected Group */}
           {report.indirectAffected.length > 0 && (
-            <div className="rounded-xl border border-[#25334d] bg-[#131b2e] p-5 space-y-3">
-              <div className="flex items-center space-x-2 text-[#d97706] font-semibold text-xs uppercase tracking-wider">
-                <GitBranch className="h-4 w-4 text-[#d97706]" />
+            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5 space-y-3 shadow-xs">
+              <div className="flex items-center space-x-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                <GitBranch className="h-4 w-4 text-amber-400" />
                 <span>Indirectly Affected Downstream Modules (Layers 2+)</span>
               </div>
 
-              <div className="divide-y divide-[#25334d]">
+              <div className="divide-y divide-[#1e293b]">
                 {report.indirectAffected.map((a) => (
                   <div key={a.id} className="py-3 space-y-1.5 text-xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2.5">
-                        <FileCode className="h-4 w-4 text-slate-400" />
+                        <FileCode className="h-4 w-4 text-slate-500" />
                         <button
                           onClick={() => setSelectedFileForModal(a.filePath)}
-                          className="font-mono text-slate-200 hover:text-[#0891b2] transition-colors font-medium hover:underline"
+                          className="font-mono text-slate-200 hover:text-indigo-400 transition-colors font-medium hover:underline"
                         >
                           {a.filePath}
                         </button>
                       </div>
-                      <span className="text-[11px] font-mono text-slate-300 bg-[#1a243b] border border-[#25334d] px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-mono text-slate-300 bg-[#111827] border border-[#334155] px-2 py-0.5 rounded font-semibold">
                         Distance: {a.distance}
                       </span>
                     </div>
@@ -269,7 +270,7 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
                       {a.dependencyPath.map((step, idx) => (
                         <span key={idx} className="flex items-center space-x-1">
                           {idx > 0 && <ArrowRight className="h-3 w-3 text-slate-500" />}
-                          <span className={idx === a.dependencyPath.length - 1 ? "text-[#d97706] font-semibold" : "text-slate-300"}>
+                          <span className={idx === a.dependencyPath.length - 1 ? "text-amber-400 font-semibold" : "text-slate-300"}>
                             {step.split("/").pop()}
                           </span>
                         </span>
@@ -283,20 +284,20 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
 
           {/* Suggested Tests Section */}
           {report.suggestedTests.length > 0 && (
-            <div className="rounded-xl border border-[#25334d] bg-[#131b2e] p-5 space-y-3">
-              <div className="flex items-center space-x-2 text-[#059669] font-semibold text-xs uppercase tracking-wider">
-                <TestTube2 className="h-4 w-4 text-[#059669]" />
+            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5 space-y-3 shadow-xs">
+              <div className="flex items-center space-x-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+                <TestTube2 className="h-4 w-4 text-emerald-400" />
                 <span>Suggested Test Suites to Run</span>
               </div>
 
               <div className="space-y-2">
                 {report.suggestedTests.map((t, idx) => (
-                  <div key={idx} className="p-3 rounded-lg bg-[#090d16] border border-[#25334d] flex items-center justify-between text-xs">
+                  <div key={idx} className="p-3 rounded-md bg-[#111827] border border-[#1e293b] flex items-center justify-between text-xs shadow-2xs">
                     <div className="flex items-center space-x-2">
-                      <CheckCircle2 className="h-4 w-4 text-[#059669] flex-shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
                       <button
                         onClick={() => setSelectedFileForModal(t.testFilePath)}
-                        className="font-mono text-slate-200 hover:text-[#059669] transition-colors font-semibold hover:underline"
+                        className="font-mono text-emerald-400 hover:text-emerald-300 transition-colors font-semibold hover:underline"
                       >
                         {t.testFilePath}
                       </button>

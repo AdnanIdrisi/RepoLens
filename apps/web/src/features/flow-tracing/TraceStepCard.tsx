@@ -75,38 +75,38 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
     <div className="relative pl-8 pb-6 last:pb-0">
       {/* Connecting Vertical Timeline Line */}
       {!isLast && (
-        <div className="absolute left-3.5 top-8 bottom-0 w-0.5 bg-[#25334d]" />
+        <div className="absolute left-3.5 top-8 bottom-0 w-0.5 bg-[#1e293b]" />
       )}
 
       {/* Timeline Node Badge */}
-      <div className={`absolute left-0 top-1 h-7 w-7 rounded-full border flex items-center justify-center ${config.bg} shadow-md`}>
+      <div className={`absolute left-0 top-1 h-7 w-7 rounded-full border flex items-center justify-center ${config.bg} shadow-xs`}>
         <IconComponent className="h-3.5 w-3.5" />
       </div>
 
       {/* Card Content */}
-      <div className="rounded-xl border border-[#25334d] bg-[#131b2e] hover:border-[#4f46e5] transition-all shadow-md overflow-hidden">
+      <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] hover:border-slate-700 transition-all shadow-xs overflow-hidden">
         {/* Step Header */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-[#1a243b] border-b border-[#25334d]">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-[#0b0f19] border-b border-[#1e293b]">
           <div className="flex items-center space-x-2.5">
-            <span className="text-[11px] font-mono text-slate-400 font-bold">
+            <span className="text-[11px] font-mono text-slate-500 font-bold">
               #{index + 1}
             </span>
             <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${config.bg}`}>
               {config.label}
             </span>
-            <span className="text-xs font-mono font-bold text-white">
+            <span className="text-xs font-mono font-bold text-slate-100">
               {step.label}
             </span>
           </div>
 
           <div className="flex items-center space-x-3 text-xs">
             {step.confidence === 1.0 ? (
-              <span className="flex items-center space-x-1 text-[11px] text-[#059669] font-mono font-medium">
+              <span className="flex items-center space-x-1 text-[11px] text-emerald-400 font-mono font-semibold">
                 <CheckCircle2 className="h-3 w-3" />
                 <span>Direct AST</span>
               </span>
             ) : (
-              <span className="flex items-center space-x-1 text-[11px] text-[#d97706] font-mono font-medium">
+              <span className="flex items-center space-x-1 text-[11px] text-amber-400 font-mono font-semibold">
                 <AlertTriangle className="h-3 w-3" />
                 <span>Inferred</span>
               </span>
@@ -115,7 +115,7 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
             {step.filePath !== "external" && (
               <button
                 onClick={() => onSelectFile(step.filePath)}
-                className="flex items-center space-x-1 text-slate-300 hover:text-[#0891b2] font-mono text-[11px] transition-colors"
+                className="flex items-center space-x-1 text-slate-400 hover:text-slate-100 font-mono text-[11px] transition-colors font-medium"
               >
                 <FileCode className="h-3 w-3" />
                 <span>{step.filePath}:{step.startLine}</span>
@@ -126,10 +126,10 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
         </div>
 
         {/* Evidence / Relationship Description */}
-        <div className="px-4 py-2 text-xs text-slate-300 bg-[#131b2e] flex items-center justify-between border-b border-[#25334d]">
+        <div className="px-4 py-2 text-xs text-slate-300 bg-[#0f172a] flex items-center justify-between border-b border-[#1e293b]">
           <div className="flex items-center space-x-1.5 font-mono text-[11px]">
-            <span className="text-slate-400">Relationship:</span>
-            <span className="text-[#0891b2] font-semibold">{step.relationship}</span>
+            <span className="text-slate-500">Relationship:</span>
+            <span className="text-slate-200 font-semibold">{step.relationship}</span>
           </div>
           {step.evidence && (
             <span className="text-[11px] text-slate-400 italic">
@@ -140,14 +140,14 @@ export function TraceStepCard({ step, index, isLast, onSelectFile }: TraceStepCa
 
         {/* Code Excerpt Snippet */}
         {snippetLines.length > 0 && (
-          <div className="p-3 bg-[#090d16] overflow-x-auto text-xs font-mono text-slate-300">
+          <div className="p-3 bg-[#090d16] overflow-x-auto text-xs font-mono text-slate-200">
             <table className="w-full border-collapse">
               <tbody>
                 {snippetLines.map((line, idx) => {
                   const lineNumber = step.startLine + idx;
                   return (
-                    <tr key={idx} className="hover:bg-[#1a243b] leading-5">
-                      <td className="w-8 pr-2 text-right select-none text-slate-500 font-mono text-[11px]">
+                    <tr key={idx} className="hover:bg-[#161f30] leading-5">
+                      <td className="w-8 pr-2 text-right select-none text-slate-600 font-mono text-[11px]">
                         {lineNumber}
                       </td>
                       <td className="whitespace-pre pl-2 font-mono text-slate-200">

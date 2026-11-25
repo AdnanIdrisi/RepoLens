@@ -269,27 +269,27 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
   return (
     <div className="relative h-full w-full bg-[#090d16] overflow-hidden flex flex-col">
       {/* Top Toolbar */}
-      <div className="h-12 px-4 border-b border-[#25334d] bg-[#131b2e] flex flex-wrap items-center justify-between gap-3 shrink-0 z-10">
+      <div className="h-12 px-4 border-b border-[#1e293b] bg-[#0f172a] flex flex-wrap items-center justify-between gap-3 shrink-0 z-10 shadow-2xs">
         <div className="flex items-center flex-wrap gap-2.5">
-          <div className="flex items-center space-x-2 text-[#f8fafc] font-semibold text-xs font-mono">
-            <Network className="h-4 w-4 text-[#4f46e5]" />
+          <div className="flex items-center space-x-2 text-slate-100 font-bold text-xs font-mono">
+            <Network className="h-4 w-4 text-indigo-400" />
             <span>P1.1 Code Relationship Graph</span>
           </div>
 
-          <span className="text-[#25334d]">|</span>
+          <span className="text-slate-600">|</span>
 
           {/* Depth Selector */}
-          <div className="flex items-center space-x-1 bg-[#090d16] px-1.5 py-0.5 rounded border border-[#25334d] text-xs font-mono text-[#94a3b8]">
-            <Layers className="h-3 w-3 text-[#94a3b8] mr-1" />
-            <span className="text-[#94a3b8] text-[11px]">Depth:</span>
+          <div className="flex items-center space-x-1 bg-[#111827] px-1.5 py-0.5 rounded-md border border-[#334155] text-xs font-mono text-slate-300">
+            <Layers className="h-3 w-3 text-slate-400 mr-1" />
+            <span className="text-slate-400 text-[11px] font-medium">Depth:</span>
             {([1, 2, 3] as const).map((d) => (
               <button
                 key={d}
                 onClick={() => setDepth(d)}
                 className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors ${
                   depth === d
-                    ? "bg-[#4f46e5] text-white font-bold"
-                    : "text-[#94a3b8] hover:text-[#f8fafc] hover:bg-[#1a243b]"
+                    ? "bg-indigo-600 text-white font-bold shadow-2xs"
+                    : "text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]"
                 }`}
                 title={`Show nodes within ${d} hop${d > 1 ? "s" : ""} from root`}
               >
@@ -300,8 +300,8 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
               onClick={() => setDepth("all")}
               className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors ${
                 depth === "all"
-                  ? "bg-[#4f46e5] text-white font-bold"
-                  : "text-[#94a3b8] hover:text-[#f8fafc] hover:bg-[#1a243b]"
+                  ? "bg-indigo-600 text-white font-bold shadow-2xs"
+                  : "text-slate-400 hover:text-slate-100 hover:bg-[#1e293b]"
               }`}
               title="Show all files in the repository"
             >
@@ -311,16 +311,16 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
 
           {/* Focus Root Indicator */}
           {activeRootNode && depth !== "all" && (
-            <div className="flex items-center space-x-1.5 bg-[#090d16] border border-[#d97706]/40 px-2 py-0.5 rounded text-xs font-mono">
-              <Crosshair className="h-3 w-3 text-[#d97706]" />
-              <span className="text-[#d97706] text-[10px] uppercase font-bold">Focus:</span>
-              <span className="text-[#f8fafc] font-semibold max-w-[150px] truncate" title={activeRootNode.data.label as string}>
+            <div className="flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md text-xs font-mono">
+              <Crosshair className="h-3 w-3 text-amber-400" />
+              <span className="text-amber-400 text-[10px] uppercase font-bold">Focus:</span>
+              <span className="text-slate-200 font-semibold max-w-[150px] truncate" title={activeRootNode.data.label as string}>
                 {activeRootNode.data.label as string}
               </span>
               {focusNodeId && (
                 <button
                   onClick={handleResetToEntry}
-                  className="ml-1 text-[10px] text-[#4f46e5] hover:text-[#818cf8] underline flex items-center"
+                  className="ml-1 text-[10px] text-indigo-400 hover:text-indigo-300 underline flex items-center font-bold"
                   title="Reset to primary application entry point"
                 >
                   <RotateCcw className="h-2.5 w-2.5 mr-0.5" />
@@ -331,7 +331,7 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
           )}
 
           {/* Node Count Badge */}
-          <div className="text-[11px] font-mono text-[#94a3b8] bg-[#090d16] px-2 py-0.5 rounded border border-[#25334d]">
+          <div className="text-[11px] font-mono text-slate-300 bg-[#1e293b] px-2 py-0.5 rounded border border-[#334155] font-semibold">
             {nodes.length} nodes · {edges.length} edges
           </div>
         </div>
@@ -340,16 +340,16 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
           <button
             onClick={handleReindex}
             disabled={indexing}
-            className="inline-flex items-center px-2.5 py-1 rounded border border-[#25334d] bg-[#1a243b] hover:bg-[#25334d] text-xs font-mono text-[#f8fafc] transition-colors disabled:opacity-50"
+            className="inline-flex items-center px-2.5 py-1 rounded-md border border-[#334155] bg-[#111827] hover:bg-[#1e293b] text-xs font-mono text-slate-200 transition-colors disabled:opacity-50 shadow-2xs font-semibold"
           >
             {indexing ? (
               <>
-                <Loader2 className="h-3 w-3 mr-1.5 animate-spin text-[#4f46e5]" />
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin text-indigo-400" />
                 <span>Indexing...</span>
               </>
             ) : (
               <>
-                <RefreshCw className="h-3 w-3 mr-1.5 text-[#94a3b8]" />
+                <RefreshCw className="h-3 w-3 mr-1.5 text-slate-400" />
                 <span>Re-Index Graph</span>
               </>
             )}
@@ -360,21 +360,21 @@ export function ArchitecturePage({ repositoryId }: ArchitecturePageProps) {
       {/* React Flow Canvas */}
       <div className="flex-1 w-full h-full relative graph-grid-bg">
         {loading ? (
-          <div className="h-full flex flex-col items-center justify-center text-[#94a3b8] text-xs font-mono">
-            <Loader2 className="h-6 w-6 animate-spin text-[#4f46e5] mb-2" />
+          <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs font-mono">
+            <Loader2 className="h-6 w-6 animate-spin text-indigo-400 mb-2" />
             <span>Rendering structural code graph...</span>
           </div>
         ) : nodes.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-[#94a3b8] text-xs p-6 text-center">
-            <Network className="h-10 w-10 text-[#25334d] mb-3" />
-            <h4 className="text-sm font-semibold text-[#f8fafc]">No Graph Generated Yet</h4>
-            <p className="text-xs text-[#94a3b8] max-w-sm mt-1">
+          <div className="h-full flex flex-col items-center justify-center text-slate-400 text-xs p-6 text-center">
+            <Network className="h-10 w-10 text-slate-600 mb-3" />
+            <h4 className="text-sm font-bold text-slate-100">No Graph Generated Yet</h4>
+            <p className="text-xs text-slate-400 max-w-sm mt-1">
               Click &quot;Re-Index Graph&quot; above to parse eligible repository files, resolve dependencies, and generate interactive nodes.
             </p>
             <button
               onClick={handleReindex}
               disabled={indexing}
-              className="mt-4 px-4 py-2 rounded bg-[#4f46e5] hover:bg-[#4338ca] text-white text-xs font-semibold transition-colors"
+              className="mt-4 px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-xs"
             >
               Build Repository Graph Now
             </button>

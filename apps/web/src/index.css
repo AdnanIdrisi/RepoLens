@@ -15,14 +15,19 @@ body {
   height: 100vh;
 }
 
-/* Technical dot grid utility */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Technical dot grid utility for dark canvas */
 .graph-grid-bg {
   background-color: #090d16;
-  background-image: radial-gradient(#25334d 1px, transparent 1px);
+  background-image: radial-gradient(#1e293b 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
-/* Custom crisp solid scrollbars */
+/* Custom crisp dark scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -33,8 +38,8 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #25334d;
-  border-radius: 2px;
+  background: #1e293b;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {

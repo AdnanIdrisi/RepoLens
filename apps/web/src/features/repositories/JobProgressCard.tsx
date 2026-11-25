@@ -53,7 +53,7 @@ export function JobProgressCard({ jobId, onJobCompleted, onRetry }: JobProgressC
 
   if (!job) {
     return (
-      <div className="rounded border border-[#25334d] bg-[#131b2e] p-4 text-xs font-mono text-[#94a3b8] animate-pulse">
+      <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4 text-xs font-mono text-slate-400 animate-pulse shadow-2xs">
         Initializing ingestion job...
       </div>
     );
@@ -62,18 +62,18 @@ export function JobProgressCard({ jobId, onJobCompleted, onRetry }: JobProgressC
   const currentStageIndex = STAGES.findIndex((s) => s.key === job.stage);
 
   return (
-    <div className="rounded border border-[#25334d] bg-[#131b2e] p-5 shadow-none space-y-4">
+    <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5 shadow-xs space-y-4">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#25334d] pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1e293b] pb-3">
         <div>
-          <span className="text-[10px] font-mono uppercase font-semibold text-[#94a3b8]">
+          <span className="text-[10px] font-mono uppercase font-bold text-slate-400">
             Ingestion Pipeline Status
           </span>
           <div className="flex items-center space-x-2 mt-1">
-            <span className="text-sm font-bold text-[#f8fafc] font-mono capitalize">{job.stage.replace(/_/g, " ")}</span>
+            <span className="text-sm font-bold text-slate-100 font-mono capitalize">{job.stage.replace(/_/g, " ")}</span>
             {job.commitSha && (
-              <span className="inline-flex items-center text-xs font-mono bg-[#1a243b] text-[#818cf8] border border-[#25334d] px-2 py-0.5 rounded">
-                <GitCommit className="h-3 w-3 mr-1" />
+              <span className="inline-flex items-center text-xs font-mono bg-[#1e293b] text-slate-300 border border-[#334155] px-2 py-0.5 rounded shadow-2xs">
+                <GitCommit className="h-3 w-3 mr-1 text-slate-400" />
                 {job.commitSha.substring(0, 7)}
               </span>
             )}
@@ -83,18 +83,18 @@ export function JobProgressCard({ jobId, onJobCompleted, onRetry }: JobProgressC
         {/* Status Pill */}
         <div className="flex items-center space-x-2 font-mono">
           {job.status === "running" && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-[#1a243b] text-[#d97706] border border-[#d97706]/40">
-              <Clock className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Running
+            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <Clock className="h-3.5 w-3.5 mr-1.5 animate-spin text-amber-400" /> Running
             </span>
           )}
           {job.status === "completed" && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-[#1a243b] text-[#059669] border border-[#059669]/40">
-              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Ready
+            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-emerald-400" /> Ready
             </span>
           )}
           {job.status === "failed" && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-[#1a243b] text-[#dc2626] border border-[#dc2626]/40">
-              <XCircle className="h-3.5 w-3.5 mr-1.5" /> Failed
+            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <XCircle className="h-3.5 w-3.5 mr-1.5 text-rose-400" /> Failed
             </span>
           )}
         </div>
@@ -108,12 +108,12 @@ export function JobProgressCard({ jobId, onJobCompleted, onRetry }: JobProgressC
           return (
             <div
               key={s.key}
-              className={`p-2 rounded border text-xs font-medium transition-colors ${
+              className={`p-2 rounded-md border text-xs font-semibold transition-colors ${
                 isCompleted
-                  ? "border-[#059669]/40 bg-[#1a243b] text-[#34d399]"
+                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                   : isCurrent
-                  ? "border-[#4f46e5] bg-[#4f46e5] text-white"
-                  : "border-[#25334d] bg-[#090d16] text-[#475569]"
+                  ? "border-indigo-500 bg-indigo-600 text-white shadow-2xs"
+                  : "border-[#334155] bg-[#111827] text-slate-500"
               }`}
             >
               {s.label}
@@ -124,26 +124,26 @@ export function JobProgressCard({ jobId, onJobCompleted, onRetry }: JobProgressC
 
       {/* Stats Counter */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1 font-mono">
-        <div className="bg-[#090d16] p-3 rounded border border-[#25334d]">
-          <span className="text-[10px] text-[#94a3b8] block uppercase">Blobs Discovered</span>
-          <span className="text-lg font-bold text-[#f8fafc] flex items-center mt-0.5">
-            <FileCode2 className="h-4 w-4 mr-1.5 text-[#4f46e5]" />
+        <div className="bg-[#111827] p-3 rounded-md border border-[#1e293b]">
+          <span className="text-[10px] text-slate-400 block uppercase font-semibold">Blobs Discovered</span>
+          <span className="text-lg font-bold text-slate-100 flex items-center mt-0.5">
+            <FileCode2 className="h-4 w-4 mr-1.5 text-slate-400" />
             {job.filesDiscovered.toLocaleString()}
           </span>
         </div>
 
-        <div className="bg-[#090d16] p-3 rounded border border-[#25334d]">
-          <span className="text-[10px] text-[#94a3b8] block uppercase">Eligible Code Files</span>
-          <span className="text-lg font-bold text-[#059669] flex items-center mt-0.5">
-            <CheckCircle2 className="h-4 w-4 mr-1.5" />
+        <div className="bg-[#111827] p-3 rounded-md border border-[#1e293b]">
+          <span className="text-[10px] text-slate-400 block uppercase font-semibold">Eligible Code Files</span>
+          <span className="text-lg font-bold text-emerald-400 flex items-center mt-0.5">
+            <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-400" />
             {job.filesProcessed.toLocaleString()}
           </span>
         </div>
 
-        <div className="col-span-2 sm:col-span-1 bg-[#090d16] p-3 rounded border border-[#25334d]">
-          <span className="text-[10px] text-[#94a3b8] block uppercase">Excluded Files</span>
-          <span className="text-lg font-bold text-[#94a3b8] flex items-center mt-0.5">
-            <AlertTriangle className="h-4 w-4 mr-1.5 text-[#d97706]" />
+        <div className="col-span-2 sm:col-span-1 bg-[#111827] p-3 rounded-md border border-[#1e293b]">
+          <span className="text-[10px] text-slate-400 block uppercase font-semibold">Excluded Files</span>
+          <span className="text-lg font-bold text-slate-300 flex items-center mt-0.5">
+            <AlertTriangle className="h-4 w-4 mr-1.5 text-amber-400" />
             {Math.max(0, job.filesDiscovered - job.filesProcessed).toLocaleString()}
           </span>
         </div>
@@ -151,19 +151,19 @@ export function JobProgressCard({ jobId, onJobCompleted, onRetry }: JobProgressC
 
       {/* Error Message and Retry Action */}
       {job.status === "failed" && (
-        <div className="rounded border border-[#dc2626] bg-[#090d16] p-3 space-y-2 font-mono">
-          <div className="flex items-start space-x-2 text-[#dc2626] text-xs">
+        <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-3 space-y-2 font-mono">
+          <div className="flex items-start space-x-2 text-rose-400 text-xs">
             <XCircle className="h-4 w-4 shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold block">Ingestion Diagnostic:</span>
-              <p className="mt-0.5 text-xs text-[#f8fafc]">{job.errorMessage || "Unknown ingestion error occurred."}</p>
+              <span className="font-bold block text-rose-300">Ingestion Diagnostic:</span>
+              <p className="mt-0.5 text-xs text-rose-200">{job.errorMessage || "Unknown ingestion error occurred."}</p>
             </div>
           </div>
 
           {onRetry && (
             <button
               onClick={onRetry}
-              className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded bg-[#dc2626] text-white hover:bg-[#b91c1c] transition-colors"
+              className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-md bg-rose-600 text-white hover:bg-rose-500 transition-colors shadow-2xs"
             >
               <RefreshCw className="h-3 w-3 mr-1.5" /> Retry Ingestion
             </button>

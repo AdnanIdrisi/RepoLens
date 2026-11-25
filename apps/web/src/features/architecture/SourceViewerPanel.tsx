@@ -54,14 +54,14 @@ export function SourceViewerPanel({ repositoryId, node, onClose, onFocusNode }: 
   const lines = content ? content.split("\n") : [];
 
   return (
-    <div className="absolute top-0 right-0 h-full w-full sm:w-[500px] bg-[#131b2e] border-l border-[#25334d] z-20 flex flex-col shadow-none select-none">
+    <div className="absolute top-0 right-0 h-full w-full sm:w-[500px] bg-[#0f172a] border-l border-[#1e293b] z-20 flex flex-col shadow-2xl select-none">
       {/* Header */}
-      <div className="h-12 px-4 border-b border-[#25334d] flex items-center justify-between bg-[#0f1523] shrink-0 gap-3">
+      <div className="h-12 px-4 border-b border-[#1e293b] flex items-center justify-between bg-[#0b0f19] shrink-0 gap-3">
         <div className="flex items-center space-x-2.5 overflow-hidden">
-          <FileCode className="h-4 w-4 text-[#4f46e5] shrink-0" />
+          <FileCode className="h-4 w-4 text-indigo-400 shrink-0" />
           <div className="overflow-hidden">
-            <h3 className="text-xs font-bold text-[#f8fafc] font-mono truncate">{node.label}</h3>
-            <p className="text-[10px] text-[#94a3b8] font-mono truncate">{node.filePath}</p>
+            <h3 className="text-xs font-bold text-slate-100 font-mono truncate">{node.label}</h3>
+            <p className="text-[10px] text-slate-400 font-mono truncate">{node.filePath}</p>
           </div>
         </div>
 
@@ -69,17 +69,17 @@ export function SourceViewerPanel({ repositoryId, node, onClose, onFocusNode }: 
           {onFocusNode && (
             <button
               onClick={() => onFocusNode(node.id)}
-              className="inline-flex items-center px-2 py-1 rounded bg-[#1a243b] hover:bg-[#25334d] text-[#818cf8] border border-[#25334d] text-[11px] font-mono font-medium transition-colors"
+              className="inline-flex items-center px-2 py-1 rounded bg-[#111827] hover:bg-[#1e293b] text-slate-200 border border-[#334155] text-[11px] font-mono font-medium transition-colors shadow-2xs"
               title="Center and isolate graph neighborhood on this node"
             >
-              <Crosshair className="h-3 w-3 mr-1 text-[#4f46e5]" />
+              <Crosshair className="h-3 w-3 mr-1 text-slate-400" />
               <span>Focus Graph</span>
             </button>
           )}
 
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-[#1a243b] text-[#94a3b8] hover:text-[#f8fafc] transition-colors"
+            className="p-1 rounded hover:bg-[#1e293b] text-slate-400 hover:text-slate-100 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -87,22 +87,22 @@ export function SourceViewerPanel({ repositoryId, node, onClose, onFocusNode }: 
       </div>
 
       {/* Node Metadata Bar */}
-      <div className="px-4 py-2 bg-[#090d16] border-b border-[#25334d] flex items-center justify-between text-xs font-mono">
-        <span className="text-[#0891b2] uppercase text-[10px] font-bold">{node.kind} declaration</span>
+      <div className="px-4 py-2 bg-[#111827] border-b border-[#1e293b] flex items-center justify-between text-xs font-mono">
+        <span className="text-slate-300 uppercase text-[10px] font-bold">{node.kind} declaration</span>
         {node.startLine && (
-          <span className="text-[#94a3b8] flex items-center text-[11px]">
-            <Hash className="h-3 w-3 mr-0.5 text-[#475569]" />
+          <span className="text-slate-400 flex items-center text-[11px]">
+            <Hash className="h-3 w-3 mr-0.5 text-slate-500" />
             Lines {node.startLine} - {node.endLine || node.startLine}
           </span>
         )}
       </div>
 
       {/* Code Viewer */}
-      <div className="flex-1 overflow-auto font-mono text-xs text-[#f8fafc] bg-[#090d16]">
+      <div className="flex-1 overflow-auto font-mono text-xs text-slate-200 bg-[#090d16]">
         {loading ? (
-          <div className="py-20 text-center text-[#94a3b8] text-xs">Loading source file...</div>
+          <div className="py-20 text-center text-slate-500 text-xs">Loading source file...</div>
         ) : error ? (
-          <div className="py-20 text-center text-[#dc2626] text-xs">{error}</div>
+          <div className="py-20 text-center text-rose-400 text-xs">{error}</div>
         ) : (
           <table className="w-full border-collapse">
             <tbody>
@@ -117,12 +117,12 @@ export function SourceViewerPanel({ repositoryId, node, onClose, onFocusNode }: 
                 return (
                   <tr
                     key={lineNum}
-                    className={`${isTargetLine ? "bg-[#1a243b] border-l-2 border-[#4f46e5]" : "hover:bg-[#131b2e]"}`}
+                    className={`${isTargetLine ? "bg-amber-500/10 border-l-2 border-amber-500" : "hover:bg-[#161f30]"}`}
                   >
-                    <td className="w-10 pr-3 text-right select-none text-[#475569] border-r border-[#25334d] text-[10px] bg-[#090d16]/70">
+                    <td className="w-10 pr-3 text-right select-none text-slate-600 border-r border-[#1e293b] text-[10px] bg-[#0b0f19]">
                       {lineNum}
                     </td>
-                    <td className="pl-3 whitespace-pre font-mono text-[11px] text-[#f8fafc]">
+                    <td className="pl-3 whitespace-pre font-mono text-[11px] text-slate-200">
                       {lineText || " "}
                     </td>
                   </tr>
