@@ -5,7 +5,6 @@ import {
   Send,
   Loader2,
   FileCode,
-  Sparkles,
   AlertCircle,
   ArrowUpRight
 } from "lucide-react";
@@ -22,8 +21,7 @@ export function AgentChatPage({ repositoryId }: AgentChatPageProps) {
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "Hello! I am RepoLens Agent powered by Google Gemini. I can investigate this codebase, inspect architecture relationships, trace execution flows, and assess change impacts using verified read-only tools.\n\nAsk me anything about how this project is structured or how specific features operate!",
+      content: "Ask a question about the repository architecture, routes, or symbol dependencies.",
       createdAt: new Date()
     }
   ]);
@@ -142,109 +140,82 @@ export function AgentChatPage({ repositoryId }: AgentChatPageProps) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8.5rem)] rounded-xl border border-[#1e293b] bg-[#0f172a] overflow-hidden shadow-xs">
-      {/* Agent Chat Header */}
-      <div className="px-6 py-3.5 border-b border-[#1e293b] bg-[#0b0f19] flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-2xs">
-            <Bot className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-100 flex items-center space-x-2 font-display">
-              <span>RepoLens Gemini Agent (P1.4)</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-                Read-Only Tools Active
-              </span>
-            </h2>
-            <p className="text-xs text-slate-400">
-              Grounded code answers with AST citations &amp; server-side tool execution
-            </p>
-          </div>
+    <div className="flex flex-col h-[calc(100vh-6rem)] rounded-xl border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark overflow-hidden">
+      {/* Minimal Header */}
+      <div className="px-5 py-3 border-b border-hairline-light dark:border-hairline-dark flex items-center justify-between">
+        <div className="flex items-center space-x-2.5">
+          <Bot className="h-4 w-4 text-[#6B7280] dark:text-[#94A3B8]" />
+          <h2 className="text-sm font-semibold font-display">AI Agent</h2>
         </div>
+        <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+          Read-only
+        </span>
       </div>
 
-      {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#090d16]">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-canvas-light dark:bg-canvas-dark">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex items-start space-x-3 ${
-              msg.role === "user" ? "flex-row-reverse space-x-reverse" : "flex-row"
-            }`}
-          >
-            {/* Avatar */}
-            <div
-              className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-2xs ${
-                msg.role === "user"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-[#111827] text-indigo-400 border border-[#334155]"
+            className={`flex items-start space-x-3 ${msg.role === "user" ? "flex-row-reverse space-x-reverse" : "flex-row"
               }`}
+          >
+            <div
+              className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ${msg.role === "user"
+                ? "bg-[#111827] dark:bg-[#F59E0B] text-white dark:text-[#0A1114]"
+                : "bg-surface-light dark:bg-surface-dark border border-hairline-light dark:border-hairline-dark text-[#6B7280] dark:text-[#94A3B8]"
+                }`}
             >
-              {msg.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+              {msg.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
             </div>
 
-            {/* Bubble */}
             <div
-              className={`max-w-2xl rounded-2xl px-5 py-3.5 text-sm ${
-                msg.role === "user"
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "bg-[#0f172a] border border-[#1e293b] text-slate-100 shadow-2xs"
-              }`}
+              className={`max-w-2xl rounded-xl px-4 py-3 text-xs ${msg.role === "user"
+                ? "bg-[#111827] dark:bg-[#F59E0B] text-white dark:text-[#0A1114]"
+                : "bg-surface-light dark:bg-surface-dark border border-hairline-light dark:border-hairline-dark"
+                }`}
             >
-              {/* Tool Calls Executed by Assistant */}
               {msg.toolCalls && msg.toolCalls.length > 0 && (
-                <div className="mb-3 space-y-1">
-                  <span className="text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
-                    Tools Executed ({msg.toolCalls.length}):
-                  </span>
+                <div className="mb-2.5">
                   {msg.toolCalls.map((tc, idx) => (
                     <ToolCallBadge key={tc.id || idx} toolCall={tc} />
                   ))}
                 </div>
               )}
 
-              {/* Message Content */}
-              <div className="whitespace-pre-wrap leading-relaxed text-xs font-sans">
-                {msg.content}
-              </div>
+              <div className="whitespace-pre-wrap leading-relaxed font-sans">{msg.content}</div>
 
-              {/* Verified Source Citations */}
               {msg.citations && msg.citations.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-[#1e293b] space-y-1.5">
-                  <span className="text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider block">
-                    Verified Source Citations:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {msg.citations.map((c: AgentCitation, idx: number) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedFileForModal(c.filePath)}
-                        className="flex items-center space-x-1 px-2.5 py-1 rounded-md bg-[#111827] hover:bg-[#1e293b] text-slate-200 text-[11px] font-mono border border-[#334155] transition-colors shadow-2xs font-medium"
-                      >
-                        <FileCode className="h-3 w-3 text-slate-400" />
-                        <span>{c.filePath}:L{c.startLine}-{c.endLine}</span>
-                        <ArrowUpRight className="h-2.5 w-2.5" />
-                      </button>
-                    ))}
-                  </div>
+                <div className="mt-3 pt-2.5 border-t border-hairline-light dark:border-hairline-dark flex flex-wrap gap-1.5">
+                  {msg.citations.map((c: AgentCitation, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedFileForModal(c.filePath)}
+                      className="flex items-center space-x-1 px-2 py-1 rounded-md bg-subtle-light dark:bg-subtle-dark border border-hairline-light dark:border-hairline-dark text-[11px] font-mono hover:border-[#111827] dark:hover:border-[#F59E0B] transition-colors"
+                    >
+                      <FileCode className="h-3 w-3 text-[#6B7280] dark:text-[#94A3B8]" />
+                      <span>
+                        {c.filePath.split("/").pop()}:L{c.startLine}-{c.endLine}
+                      </span>
+                      <ArrowUpRight className="h-2.5 w-2.5" />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           </div>
         ))}
 
-        {/* Live Status Banner during Streaming / Tool Execution */}
         {loading && statusMessage && (
-          <div className="flex items-center space-x-3 text-xs text-slate-300 font-mono bg-[#111827] border border-[#1e293b] p-3 rounded-xl max-w-md shadow-xs">
-            <Loader2 className="h-4 w-4 animate-spin flex-shrink-0 text-indigo-400" />
+          <div className="flex items-center space-x-2.5 text-xs font-mono text-[#6B7280] dark:text-[#94A3B8] bg-surface-light dark:bg-surface-dark border border-hairline-light dark:border-hairline-dark px-3.5 py-2.5 rounded-xl w-fit">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
             <span>{statusMessage}</span>
           </div>
         )}
 
-        {/* Error Alert */}
         {error && (
-          <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs flex items-center space-x-2 font-medium">
-            <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-400" />
+          <div className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -252,49 +223,45 @@ export function AgentChatPage({ repositoryId }: AgentChatPageProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Prompt Chips */}
-      <div className="px-6 py-2.5 bg-[#0b0f19] border-t border-[#1e293b] flex items-center space-x-2 overflow-x-auto text-xs">
-        <Sparkles className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
-        <span className="text-slate-400 font-medium flex-shrink-0">Suggestions:</span>
+      {/* Minimal Prompt Chips */}
+      <div className="px-4 py-2 border-t border-hairline-light dark:border-hairline-dark flex items-center space-x-2 overflow-x-auto">
         {[
-          "Give me an architectural overview of this repository",
-          "What Express routes exist and how do they trace to services?",
-          "Explain how authentication is handled in this codebase",
-          "What is the blast radius if I change the User model?"
+          "Architecture overview",
+          "Express routes & services",
+          "Authentication flow",
         ].map((s) => (
           <button
             key={s}
             onClick={() => handleSendMessage(s)}
             disabled={loading}
-            className="whitespace-nowrap px-2.5 py-1 rounded-md bg-[#111827] hover:bg-[#1e293b] hover:text-indigo-300 hover:border-indigo-500/40 text-slate-300 text-[11px] border border-[#334155] transition-colors disabled:opacity-50 shadow-2xs font-medium"
+            className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-subtle-light dark:bg-subtle-dark border border-hairline-light dark:border-hairline-dark text-[11px] text-[#6B7280] dark:text-[#94A3B8] hover:text-[#111827] dark:hover:text-[#F1F5F9] transition-colors disabled:opacity-50"
           >
             {s}
           </button>
         ))}
       </div>
 
-      {/* Prompt Input Form */}
-      <form onSubmit={handleFormSubmit} className="p-4 bg-[#0b0f19] border-t border-[#1e293b]">
+      {/* Input */}
+      <form onSubmit={handleFormSubmit} className="p-4 border-t border-hairline-light dark:border-hairline-dark">
         <div className="relative flex items-center">
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask Gemini Agent to analyze code, trace flows, or estimate impacts..."
+            placeholder="Ask about the codebase..."
             disabled={loading}
-            className="w-full pl-4 pr-12 py-3 rounded-xl bg-[#111827] border border-[#334155] text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:bg-[#161f30] focus:border-indigo-500 disabled:opacity-50 shadow-2xs"
+            className="w-full pl-4 pr-14 py-3 rounded-xl bg-subtle-light dark:bg-subtle-dark border border-hairline-light dark:border-hairline-dark text-xs placeholder-[#6B7280] dark:placeholder-[#64748B] focus:outline-none focus:border-[#111827] dark:focus:border-[#F59E0B] disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={loading || !inputValue.trim()}
-            className="absolute right-2 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-40 flex items-center justify-center"
+            className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-[#111827] dark:bg-[#F59E0B] text-white dark:text-[#0A1114] text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-40"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           </button>
         </div>
       </form>
 
-      {/* Source Viewer Modal */}
       {selectedFileForModal && (
         <SourceViewerModal
           repositoryId={repositoryId}

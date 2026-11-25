@@ -4,10 +4,8 @@ import {
   ArrowRight,
   FileCode,
   CheckCircle2,
-  TestTube2,
   Loader2,
   AlertCircle,
-  GitBranch
 } from "lucide-react";
 import { SourceViewerModal } from "../repositories/SourceViewerModal";
 import type { ImpactReport, CodeFile } from "@repolens/shared";
@@ -32,7 +30,8 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
       const res = await fetch(`/api/repositories/${repositoryId}/files?limit=200`);
       const data = await res.json();
       if (res.ok && data.success) {
-        const fileList: CodeFile[] = (data.data?.files || []).filter(
+        const rawList: CodeFile[] = data.data?.items || data.data?.files || [];
+        const fileList = rawList.filter(
           (f: CodeFile) => f.status === "discovered" || f.status === "fetched"
         );
         setFiles(fileList);
@@ -62,8 +61,8 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           targetFilePath: selectedFile,
-          maxDepth
-        })
+          maxDepth,
+        }),
       });
 
       const data = await res.json();
@@ -80,156 +79,106 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner and Target Selector Form */}
-      <div className="p-6 rounded-xl border border-[#1e293b] bg-[#0f172a] space-y-4 shadow-xs">
-        <div className="flex items-center space-x-3">
-          <div className="h-9 w-9 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center">
-            <ShieldAlert className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-100 font-display">Change Impact Analysis (P1.5)</h2>
-            <p className="text-xs text-slate-400">
-              Estimate the blast radius of modifying a file or symbol by traversing the reverse dependency graph.
-            </p>
-          </div>
-        </div>
+    <div className="space-y-5">
+      {/* Compact Header & Controls */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold font-display">Impact Analysis</h1>
+      </div>
 
-        {/* Input Bar */}
-        <div className="flex flex-wrap items-center gap-3 pt-2">
-          <div className="flex-1 min-w-[280px]">
-            <label className="block text-xs font-semibold text-slate-400 mb-1">
-              Select Target File to Modify:
-            </label>
-            {loadingFiles ? (
-              <div className="h-10 bg-[#111827] rounded-md border border-[#334155] flex items-center px-3 text-xs text-slate-400">
-                <Loader2 className="h-3.5 w-3.5 animate-spin mr-2 text-indigo-400" />
-                Loading repository files...
-              </div>
-            ) : (
-              <select
-                value={selectedFile}
-                onChange={(e) => setSelectedFile(e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-[#111827] border border-[#334155] text-slate-100 text-xs font-mono focus:outline-none focus:border-indigo-500 shadow-2xs"
-              >
-                {files.map((f) => (
-                  <option key={f.path} value={f.path} className="bg-[#111827] text-slate-100">
-                    {f.path}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="w-28">
-            <label className="block text-xs font-semibold text-slate-400 mb-1">
-              Max Depth:
-            </label>
+      <div className="p-5 rounded-xl border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[240px]">
+          {loadingFiles ? (
+            <div className="h-9 bg-subtle-light dark:bg-subtle-dark rounded-lg border border-hairline-light dark:border-hairline-dark flex items-center px-3 text-xs text-[#6B7280] dark:text-[#94A3B8]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" />
+              Loading files...
+            </div>
+          ) : (
             <select
-              value={maxDepth}
-              onChange={(e) => setMaxDepth(Number(e.target.value))}
-              className="w-full px-3 py-2 rounded-md bg-[#111827] border border-[#334155] text-slate-100 text-xs font-mono focus:outline-none focus:border-indigo-500 shadow-2xs"
+              value={selectedFile}
+              onChange={(e) => setSelectedFile(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-subtle-light dark:bg-subtle-dark border border-hairline-light dark:border-hairline-dark text-xs font-mono focus:outline-none focus:border-[#111827] dark:focus:border-[#F59E0B]"
             >
-              {[1, 2, 3, 4, 5, 6].map((d) => (
-                <option key={d} value={d} className="bg-[#111827] text-slate-100">
-                  {d} {d === 1 ? "layer" : "layers"}
+              {files.map((f) => (
+                <option key={f.path} value={f.path}>
+                  {f.path}
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="self-end">
-            <button
-              onClick={handleAnalyze}
-              disabled={analyzing || !selectedFile}
-              className="px-5 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs transition-all flex items-center space-x-1.5 disabled:opacity-50 h-9"
-            >
-              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
-              <span>{analyzing ? "Analyzing Blast Radius..." : "Analyze Impact"}</span>
-            </button>
-          </div>
+          )}
         </div>
+
+        <select
+          value={maxDepth}
+          onChange={(e) => setMaxDepth(Number(e.target.value))}
+          className="px-3 py-2 rounded-lg bg-subtle-light dark:bg-subtle-dark border border-hairline-light dark:border-hairline-dark text-xs font-mono focus:outline-none focus:border-[#111827] dark:focus:border-[#F59E0B]"
+        >
+          {[1, 2, 3, 4, 5, 6].map((d) => (
+            <option key={d} value={d}>
+              {d} {d === 1 ? "layer" : "layers"}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={handleAnalyze}
+          disabled={analyzing || !selectedFile}
+          className="px-4 py-2 rounded-lg bg-[#111827] dark:bg-[#F59E0B] text-white dark:text-[#0A1114] text-xs font-semibold hover:opacity-90 transition-opacity flex items-center space-x-1.5 disabled:opacity-50"
+        >
+          {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+          <span>{analyzing ? "Analyzing..." : "Analyze"}</span>
+        </button>
       </div>
 
-      {/* Error Alert */}
       {error && (
-        <div className="p-4 rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-300 text-sm flex items-center space-x-2 font-medium">
-          <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-400" />
+        <div className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Analysis Results Display */}
       {report && (
-        <div className="space-y-6">
-          {/* Summary Stat Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4.5 shadow-xs">
-              <span className="text-xs font-bold text-rose-400 uppercase tracking-wider block mb-1">
-                Direct Dependencies
-              </span>
-              <span className="text-2xl font-bold font-mono text-slate-100">
+        <div className="space-y-5">
+          {/* Joined 3-Stat Hairline Strip */}
+          <div className="rounded-xl border border-hairline-light dark:border-hairline-dark bg-hairline-light dark:bg-hairline-dark overflow-hidden grid grid-cols-3 gap-px">
+            <div className="p-5 bg-surface-light dark:bg-surface-dark">
+              <span className="text-xs text-[#6B7280] dark:text-[#94A3B8] block">Direct</span>
+              <span className="mt-1 text-2xl font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 block">
                 {report.directAffected.length}
               </span>
-              <span className="text-xs text-slate-400 block mt-1">
-                Modules directly importing or calling target
-              </span>
             </div>
-
-            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4.5 shadow-xs">
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block mb-1">
-                Indirect Ripple Effects
-              </span>
-              <span className="text-2xl font-bold font-mono text-slate-100">
+            <div className="p-5 bg-surface-light dark:bg-surface-dark">
+              <span className="text-xs text-[#6B7280] dark:text-[#94A3B8] block">Indirect</span>
+              <span className="mt-1 text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400 block">
                 {report.indirectAffected.length}
               </span>
-              <span className="text-xs text-slate-400 block mt-1">
-                Transitive callers and downstream consumers
-              </span>
             </div>
-
-            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4.5 shadow-xs">
-              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider block mb-1">
-                Suggested Test Suites
-              </span>
-              <span className="text-2xl font-bold font-mono text-slate-100">
+            <div className="p-5 bg-surface-light dark:bg-surface-dark">
+              <span className="text-xs text-[#6B7280] dark:text-[#94A3B8] block">Tests</span>
+              <span className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 block">
                 {report.suggestedTests.length}
-              </span>
-              <span className="text-xs text-slate-400 block mt-1">
-                Test files with direct/indirect blast exposure
               </span>
             </div>
           </div>
 
-          {/* Direct Affected Group */}
-          <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5 space-y-3 shadow-xs">
-            <div className="flex items-center space-x-2 text-rose-400 font-bold text-xs uppercase tracking-wider">
-              <AlertCircle className="h-4 w-4 text-rose-400" />
-              <span>Directly Affected Files (Layer 1 - Distance 1)</span>
-            </div>
-
+          {/* Direct Affected */}
+          <div className="rounded-xl border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark p-5 space-y-3">
+            <h3 className="text-xs font-semibold text-[#6B7280] dark:text-[#94A3B8]">
+              Direct Dependencies
+            </h3>
             {report.directAffected.length === 0 ? (
-              <p className="text-xs text-slate-500 italic py-2">
-                No direct reverse dependencies detected in indexed codebase.
-              </p>
+              <p className="text-xs text-[#6B7280] dark:text-[#94A3B8] py-2">None</p>
             ) : (
-              <div className="divide-y divide-[#1e293b]">
+              <div className="divide-y divide-hairline-light dark:divide-hairline-dark">
                 {report.directAffected.map((a) => (
-                  <div key={a.id} className="py-2.5 flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-2.5">
-                      <FileCode className="h-4 w-4 text-slate-500" />
-                      <button
-                        onClick={() => setSelectedFileForModal(a.filePath)}
-                        className="font-mono text-slate-200 hover:text-indigo-400 transition-colors font-medium hover:underline"
-                      >
-                        {a.filePath}
-                      </button>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#111827] text-slate-300 border border-[#334155] font-mono">
-                        {a.kind}
-                      </span>
-                    </div>
-
-                    <span className="text-[11px] font-mono text-slate-300 bg-[#111827] px-2 py-0.5 rounded border border-[#334155] font-semibold">
+                  <div key={a.id} className="py-2 flex items-center justify-between text-xs font-mono">
+                    <button
+                      onClick={() => setSelectedFileForModal(a.filePath)}
+                      className="flex items-center space-x-2 hover:underline text-left"
+                    >
+                      <FileCode className="h-3.5 w-3.5 text-[#6B7280] dark:text-[#94A3B8]" />
+                      <span>{a.filePath}</span>
+                    </button>
+                    <span className="text-[11px] text-[#6B7280] dark:text-[#94A3B8]">
                       {a.relationship || "imports"}
                     </span>
                   </div>
@@ -238,41 +187,31 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
             )}
           </div>
 
-          {/* Indirect Affected Group */}
+          {/* Indirect Affected */}
           {report.indirectAffected.length > 0 && (
-            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5 space-y-3 shadow-xs">
-              <div className="flex items-center space-x-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
-                <GitBranch className="h-4 w-4 text-amber-400" />
-                <span>Indirectly Affected Downstream Modules (Layers 2+)</span>
-              </div>
-
-              <div className="divide-y divide-[#1e293b]">
+            <div className="rounded-xl border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark p-4 space-y-2">
+              <h3 className="text-xs font-semibold text-[#6B7280] dark:text-[#94A3B8]">
+                Indirect Ripple
+              </h3>
+              <div className="divide-y divide-hairline-light dark:divide-hairline-dark">
                 {report.indirectAffected.map((a) => (
-                  <div key={a.id} className="py-3 space-y-1.5 text-xs">
+                  <div key={a.id} className="py-2.5 space-y-1 text-xs font-mono">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2.5">
-                        <FileCode className="h-4 w-4 text-slate-500" />
-                        <button
-                          onClick={() => setSelectedFileForModal(a.filePath)}
-                          className="font-mono text-slate-200 hover:text-indigo-400 transition-colors font-medium hover:underline"
-                        >
-                          {a.filePath}
-                        </button>
-                      </div>
-                      <span className="text-[11px] font-mono text-slate-300 bg-[#111827] border border-[#334155] px-2 py-0.5 rounded font-semibold">
-                        Distance: {a.distance}
+                      <button
+                        onClick={() => setSelectedFileForModal(a.filePath)}
+                        className="hover:underline text-left"
+                      >
+                        {a.filePath}
+                      </button>
+                      <span className="text-[11px] text-[#6B7280] dark:text-[#94A3B8]">
+                        L{a.distance}
                       </span>
                     </div>
-
-                    {/* Dependency Path Explanation */}
-                    <div className="flex items-center space-x-1.5 text-[11px] font-mono text-slate-400 pl-6 overflow-x-auto">
-                      <span>Path:</span>
+                    <div className="flex items-center space-x-1 text-[11px] text-[#6B7280] dark:text-[#94A3B8] overflow-x-auto">
                       {a.dependencyPath.map((step, idx) => (
                         <span key={idx} className="flex items-center space-x-1">
-                          {idx > 0 && <ArrowRight className="h-3 w-3 text-slate-500" />}
-                          <span className={idx === a.dependencyPath.length - 1 ? "text-amber-400 font-semibold" : "text-slate-300"}>
-                            {step.split("/").pop()}
-                          </span>
+                          {idx > 0 && <ArrowRight className="h-2.5 w-2.5" />}
+                          <span>{step.split("/").pop()}</span>
                         </span>
                       ))}
                     </div>
@@ -282,27 +221,23 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
             </div>
           )}
 
-          {/* Suggested Tests Section */}
+          {/* Suggested Tests */}
           {report.suggestedTests.length > 0 && (
-            <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5 space-y-3 shadow-xs">
-              <div className="flex items-center space-x-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
-                <TestTube2 className="h-4 w-4 text-emerald-400" />
-                <span>Suggested Test Suites to Run</span>
-              </div>
-
-              <div className="space-y-2">
+            <div className="rounded-xl border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark p-4 space-y-2">
+              <h3 className="text-xs font-semibold text-[#6B7280] dark:text-[#94A3B8]">
+                Suggested Tests
+              </h3>
+              <div className="divide-y divide-hairline-light dark:divide-hairline-dark">
                 {report.suggestedTests.map((t, idx) => (
-                  <div key={idx} className="p-3 rounded-md bg-[#111827] border border-[#1e293b] flex items-center justify-between text-xs shadow-2xs">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                      <button
-                        onClick={() => setSelectedFileForModal(t.testFilePath)}
-                        className="font-mono text-emerald-400 hover:text-emerald-300 transition-colors font-semibold hover:underline"
-                      >
-                        {t.testFilePath}
-                      </button>
-                    </div>
-                    <span className="text-slate-400 text-[11px] italic">
+                  <div key={idx} className="py-2 flex items-center justify-between text-xs font-mono">
+                    <button
+                      onClick={() => setSelectedFileForModal(t.testFilePath)}
+                      className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      <span>{t.testFilePath}</span>
+                    </button>
+                    <span className="text-[11px] text-[#6B7280] dark:text-[#94A3B8] font-sans">
                       {t.reason}
                     </span>
                   </div>
@@ -313,7 +248,6 @@ export function ImpactAnalysisPage({ repositoryId }: ImpactAnalysisPageProps) {
         </div>
       )}
 
-      {/* Source Viewer Modal */}
       {selectedFileForModal && (
         <SourceViewerModal
           repositoryId={repositoryId}

@@ -20,44 +20,32 @@ export const CodeNode = memo(({ data }: { data: CodeNodeData }) => {
       case "file":
         return {
           icon: FileCode,
-          border: "border-[#334155] hover:border-slate-400",
-          badge: "bg-[#1e293b] text-slate-300 border-[#334155]",
-          headerColor: "text-slate-200"
+          iconBg: "bg-[#111827] dark:bg-[#F1F5F9] text-white dark:text-[#0A1114]",
         };
       case "function":
         return {
           icon: FunctionSquare,
-          border: "border-emerald-500/40 hover:border-emerald-400",
-          badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-          headerColor: "text-emerald-400"
+          iconBg: "bg-emerald-500 text-white",
         };
       case "class":
         return {
           icon: Box,
-          border: "border-blue-500/40 hover:border-blue-400",
-          badge: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-          headerColor: "text-blue-400"
+          iconBg: "bg-sky-500 text-white",
         };
       case "method":
         return {
           icon: Cpu,
-          border: "border-indigo-500/40 hover:border-indigo-400",
-          badge: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-          headerColor: "text-indigo-400"
+          iconBg: "bg-indigo-500 text-white",
         };
       case "route":
         return {
           icon: Globe,
-          border: "border-purple-500/40 hover:border-purple-400",
-          badge: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-          headerColor: "text-purple-400"
+          iconBg: "bg-purple-500 text-white",
         };
       default:
         return {
           icon: FileCode,
-          border: "border-[#334155] hover:border-slate-500",
-          badge: "bg-[#1e293b] text-slate-400 border-[#334155]",
-          headerColor: "text-slate-400"
+          iconBg: "bg-[#6B7280] text-white",
         };
     }
   };
@@ -67,51 +55,50 @@ export const CodeNode = memo(({ data }: { data: CodeNodeData }) => {
 
   return (
     <div
-      className={`min-w-[210px] max-w-[270px] rounded-lg border transition-colors select-none shadow-2xs ${
+      className={`min-w-[200px] max-w-[250px] rounded-xl border bg-surface-light dark:bg-surface-dark px-4 py-3 transition-all select-none shadow-sm ${
         data.isRoot
-          ? "border-2 border-amber-500 bg-[#0f172a] ring-2 ring-amber-500/40"
+          ? "border-amber-500 ring-2 ring-amber-500/25"
           : data.isSelected
-          ? "border-2 border-indigo-500 bg-[#0f172a] ring-2 ring-indigo-500/40"
-          : `bg-[#0f172a] ${config.border}`
+          ? "border-[#111827] dark:border-[#F59E0B] ring-2 ring-[#111827]/15 dark:ring-[#F59E0B]/25"
+          : "border-hairline-light dark:border-hairline-dark hover:border-[#9CA3AF] dark:hover:border-[#334B57]"
       }`}
     >
-      <Handle type="target" position={Position.Left} className="w-2 h-2 !bg-indigo-500 !border-[#0f172a]" />
-      <Handle type="target" position={Position.Top} className="w-2 h-2 !bg-indigo-500 !border-[#0f172a]" />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="w-2 h-2 !bg-[#9CA3AF] dark:!bg-[#475569] !border-surface-light dark:!border-surface-dark"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="w-2 h-2 !bg-[#9CA3AF] dark:!bg-[#475569] !border-surface-light dark:!border-surface-dark"
+      />
 
-      {/* Node Header Strip */}
-      <div className="bg-[#0b0f19] px-2.5 py-1.5 border-b border-[#1e293b] flex items-center justify-between gap-1">
-        <div className="flex items-center space-x-1.5">
-          <span className={`text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border font-semibold ${config.badge}`}>
-            {data.kind}
-          </span>
-          {data.isRoot && (
-            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
-              Focus Root
-            </span>
-          )}
+      <div className="flex items-center space-x-2.5">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${config.iconBg}`}>
+          <Icon className="h-3.5 w-3.5" />
         </div>
-        {data.startLine && (
-          <span className="text-[10px] font-mono text-slate-400 shrink-0 font-medium">
-            L{data.startLine}{data.endLine ? `-${data.endLine}` : ""}
-          </span>
-        )}
-      </div>
-
-      {/* Node Body */}
-      <div className="p-2.5 flex items-start space-x-2 bg-[#0f172a]">
-        <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${data.isRoot ? "text-amber-400" : config.headerColor}`} />
-        <div className="overflow-hidden w-full">
-          <div className="text-xs font-bold text-slate-100 truncate font-mono" title={data.label}>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-semibold truncate text-[#111827] dark:text-[#F1F5F9]" title={data.label}>
             {data.label}
           </div>
-          <div className="text-[10px] text-slate-400 truncate font-mono mt-0.5" title={data.filePath}>
-            {data.filePath}
+          <div className="text-[10px] text-[#6B7280] dark:text-[#94A3B8] truncate font-mono" title={data.filePath}>
+            {data.filePath.split("/").pop()}
+            {data.startLine ? `:${data.startLine}` : ""}
           </div>
         </div>
       </div>
 
-      <Handle type="source" position={Position.Right} className="w-2 h-2 !bg-indigo-500 !border-[#0f172a]" />
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2 !bg-indigo-500 !border-[#0f172a]" />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="w-2 h-2 !bg-[#9CA3AF] dark:!bg-[#475569] !border-surface-light dark:!border-surface-dark"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="w-2 h-2 !bg-[#9CA3AF] dark:!bg-[#475569] !border-surface-light dark:!border-surface-dark"
+      />
     </div>
   );
 });

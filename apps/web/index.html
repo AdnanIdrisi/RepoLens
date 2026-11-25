@@ -4,13 +4,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RepoLens - AI-Powered Code Intelligence Platform</title>
-    <meta name="description" content="Understand complex codebases, visualize dependency graphs, trace static execution flows, and perform AI-guided code exploration." />
+    <title>RepoLens</title>
+    <meta name="description" content="Minimalist code intelligence platform." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("repolens-theme");
+          var isDark = saved ? saved === "dark" : true;
+          if (isDark) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-[#090d16] text-slate-100 antialiased min-h-screen selection:bg-indigo-600 selection:text-white font-sans">
+  <body class="bg-[#FAF9F6] dark:bg-[#0A1114] text-[#111827] dark:text-[#F1F5F9] antialiased min-h-screen selection:bg-[#111827] selection:text-white dark:selection:bg-[#F59E0B] dark:selection:text-[#0A1114] font-sans transition-colors duration-150">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

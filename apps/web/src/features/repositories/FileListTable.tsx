@@ -1,52 +1,40 @@
 import { useState, useEffect } from "react";
-import { Search, FileCode, CheckCircle2, XCircle, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Search, Eye, ChevronLeft, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
+import type { CodeFile } from "@repolens/shared";
 import { SourceViewerModal } from "./SourceViewerModal";
-
-interface CodeFileItem {
-  _id: string;
-  path: string;
-  language: string;
-  sizeBytes: number;
-  status: "discovered" | "fetched" | "excluded" | "failed";
-  exclusionReason?: string;
-}
 
 interface FileListTableProps {
   repositoryId: string;
 }
 
 export function FileListTable({ repositoryId }: FileListTableProps) {
-  const [files, setFiles] = useState<CodeFileItem[]>([]);
+  const [files, setFiles] = useState<CodeFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalFiles, setTotalFiles] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<"all" | "discovered" | "excluded">("all");
+  const [search, setSearch] = useState("");
   const [selectedFileForView, setSelectedFileForView] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchFiles() {
       setLoading(true);
       try {
-        const params = new URLSearchParams({
+        const query = new URLSearchParams({
           page: page.toString(),
-          limit: "25"
+          limit: "25",
+          ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+          ...(search.trim() ? { search: search.trim() } : {}),
         });
-        if (statusFilter !== "all") {
-          params.append("status", statusFilter);
-        }
-        if (search.trim()) {
-          params.append("search", search.trim());
-        }
 
-        const res = await fetch(`/api/repositories/${repositoryId}/files?${params.toString()}`);
+        const res = await fetch(`/api/repositories/${repositoryId}/files?${query.toString()}`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.data) {
-            setFiles(data.data.files);
-            setTotalPages(data.data.pagination.totalPages || 1);
-            setTotalFiles(data.data.pagination.total || 0);
+            setFiles(data.data.items || data.data.files || []);
+            setTotalPages(data.data.pagination?.totalPages ?? 1);
+            setTotalFiles(data.data.pagination?.total ?? 0);
           }
         }
       } catch (err) {
@@ -64,132 +52,107 @@ export function FileListTable({ repositoryId }: FileListTableProps) {
     return `${(bytes / 1024).toFixed(1)} KB`;
   };
 
-  const getLanguageBadge = (lang: string) => {
-    const colors: Record<string, string> = {
-      typescript: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-      tsx: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-      javascript: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-      jsx: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-      json: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-    };
-
-    return (
-      <span
-        className={`px-2 py-0.5 rounded text-[10px] font-mono border font-medium ${
-          colors[lang] || "bg-[#1e293b] text-slate-400 border-[#334155]"
-        }`}
-      >
-        {lang}
-      </span>
-    );
-  };
-
   return (
-    <div className="rounded-xl border border-[#1e293b] bg-[#0f172a] shadow-2xs overflow-hidden">
-      {/* Table Toolbar */}
-      <div className="p-4 border-b border-[#1e293b] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0b0f19]">
-        <div className="flex items-center space-x-2 font-mono">
-          <FileCode className="h-4 w-4 text-indigo-400" />
-          <h2 className="text-sm font-bold text-slate-100 font-display">Discovered Files</h2>
-          <span className="text-[10px] text-slate-300 bg-[#1e293b] px-2 py-0.5 rounded border border-[#334155] shadow-2xs font-semibold">
-            {totalFiles.toLocaleString()} files
+    <div className="rounded-xl border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark overflow-hidden">
+      {/* Toolbar */}
+      <div className="px-5 py-3.5 border-b border-hairline-light dark:border-hairline-dark flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center space-x-2">
+          <h2 className="text-sm font-semibold">Files</h2>
+          <span className="text-xs font-mono text-[#6B7280] dark:text-[#94A3B8]">
+            {totalFiles.toLocaleString()}
           </span>
         </div>
 
-        <div className="flex items-center space-x-3 w-full sm:w-auto font-mono">
-          {/* Status Tabs */}
-          <div className="flex bg-[#111827] p-0.5 rounded-md border border-[#334155] text-xs">
-            <button
-              onClick={() => { setStatusFilter("all"); setPage(1); }}
-              className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                statusFilter === "all" ? "bg-indigo-600 text-white font-semibold shadow-2xs" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => { setStatusFilter("discovered"); setPage(1); }}
-              className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                statusFilter === "discovered" ? "bg-indigo-600 text-white font-semibold shadow-2xs" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              Eligible
-            </button>
-            <button
-              onClick={() => { setStatusFilter("excluded"); setPage(1); }}
-              className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                statusFilter === "excluded" ? "bg-indigo-600 text-white font-semibold shadow-2xs" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              Excluded
-            </button>
+        <div className="flex items-center space-x-2.5 w-full sm:w-auto">
+          <div className="flex bg-subtle-light dark:bg-subtle-dark p-1 rounded-lg border border-hairline-light dark:border-hairline-dark text-xs">
+            {(
+              [
+                { id: "all", label: "All" },
+                { id: "discovered", label: "Eligible" },
+                { id: "excluded", label: "Excluded" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setStatusFilter(tab.id);
+                  setPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs transition-colors ${statusFilter === tab.id
+                  ? "bg-surface-light dark:bg-[#1A272E] text-[#111827] dark:text-[#F1F5F9] font-medium shadow-sm"
+                  : "text-[#6B7280] dark:text-[#94A3B8] hover:text-[#111827] dark:hover:text-[#F1F5F9]"
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Search Input */}
-          <div className="relative flex-1 sm:w-60">
-            <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-slate-500 pointer-events-none" />
+          <div className="relative flex-1 sm:w-56">
+            <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280] dark:text-[#94A3B8] pointer-events-none" />
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Filter file path..."
-              className="w-full bg-[#111827] border border-[#334155] rounded-md pl-8 pr-3 py-1.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-2xs"
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Filter path..."
+              className="w-full bg-subtle-light dark:bg-subtle-dark border border-hairline-light dark:border-hairline-dark rounded-lg pl-9 pr-3 py-1.5 text-xs font-mono text-[#111827] dark:text-[#F1F5F9] placeholder-[#6B7280] dark:placeholder-[#64748B] focus:outline-none focus:border-[#111827] dark:focus:border-[#F59E0B]"
             />
           </div>
         </div>
       </div>
 
-      {/* Table Content */}
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs font-mono">
-          <thead className="bg-[#111827] text-slate-400 uppercase tracking-wider font-semibold border-b border-[#1e293b] text-[10px]">
+          <thead className="border-b border-hairline-light dark:border-hairline-dark text-[#6B7280] dark:text-[#94A3B8] text-[11px] font-sans font-medium">
             <tr>
-              <th className="py-2.5 px-4">File Path</th>
+              <th className="py-2.5 px-4">Path</th>
               <th className="py-2.5 px-4">Language</th>
               <th className="py-2.5 px-4">Size</th>
-              <th className="py-2.5 px-4">Status & Diagnostics</th>
+              <th className="py-2.5 px-4 text-right">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#1e293b] text-slate-200">
+          <tbody className="divide-y divide-hairline-light dark:divide-hairline-dark">
             {loading ? (
               <tr>
-                <td colSpan={4} className="py-8 text-center text-slate-500">
-                  Loading repository files...
+                <td colSpan={4} className="py-8 text-center text-[#6B7280] dark:text-[#94A3B8]">
+                  Loading...
                 </td>
               </tr>
             ) : files.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-8 text-center text-slate-500">
-                  No files match the selected filter.
+                <td colSpan={4} className="py-8 text-center text-[#6B7280] dark:text-[#94A3B8]">
+                  No files found
                 </td>
               </tr>
             ) : (
               files.map((file) => (
-                <tr key={file._id} className="hover:bg-[#161f30] transition-colors">
-                  <td className="py-2.5 px-4 text-slate-200 font-medium">{file.path}</td>
-                  <td className="py-2.5 px-4">{getLanguageBadge(file.language)}</td>
-                  <td className="py-2.5 px-4 text-slate-400">{formatSize(file.sizeBytes)}</td>
-                  <td className="py-2.5 px-4 flex items-center justify-between">
-                    {file.status === "discovered" || file.status === "fetched" ? (
-                      <span className="inline-flex items-center text-emerald-400 font-semibold">
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-emerald-400" /> Eligible
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center text-slate-400">
-                        <XCircle className="h-3.5 w-3.5 mr-1 text-rose-400" />
-                        <span className="truncate max-w-xs text-slate-400" title={file.exclusionReason}>
-                          {file.exclusionReason || "Excluded"}
+                <tr
+                  key={file.path}
+                  onClick={() => setSelectedFileForView(file.path)}
+                  className="hover:bg-subtle-light dark:hover:bg-[#162329] transition-colors cursor-pointer"
+                >
+                  <td className="py-2.5 px-4 font-medium">{file.path}</td>
+                  <td className="py-2.5 px-4 text-[#6B7280] dark:text-[#94A3B8]">
+                    {file.language}
+                  </td>
+                  <td className="py-2.5 px-4 text-[#6B7280] dark:text-[#94A3B8] tabular-nums">
+                    {formatSize(file.sizeBytes)}
+                  </td>
+                  <td className="py-2.5 px-4">
+                    <div className="flex items-center justify-end space-x-2">
+                      {file.status === "discovered" || file.status === "fetched" ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                      ) : (
+                        <span title={file.exclusionReason || "Excluded"}>
+                          <XCircle className="h-3.5 w-3.5 text-[#6B7280] dark:text-[#64748B]" />
                         </span>
-                      </span>
-                    )}
-
-                    <button
-                      onClick={() => setSelectedFileForView(file.path)}
-                      className="text-slate-400 hover:text-slate-100 p-1 rounded hover:bg-[#1e293b] transition-colors"
-                      title="Inspect source code"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </button>
+                      )}
+                      <Eye className="h-3.5 w-3.5 text-[#6B7280] dark:text-[#94A3B8]" />
+                    </div>
                   </td>
                 </tr>
               ))
@@ -198,32 +161,31 @@ export function FileListTable({ repositoryId }: FileListTableProps) {
         </table>
       </div>
 
-      {/* Pagination Footer */}
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="p-3 border-t border-[#1e293b] flex items-center justify-between bg-[#0b0f19] text-xs font-mono">
-          <span className="text-slate-400">
-            Page {page} of {totalPages}
+        <div className="px-4 py-2.5 border-t border-hairline-light dark:border-hairline-dark flex items-center justify-between text-xs font-mono text-[#6B7280] dark:text-[#94A3B8]">
+          <span>
+            {page} / {totalPages}
           </span>
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="p-1 rounded bg-[#111827] border border-[#334155] text-slate-300 hover:bg-[#1e293b] disabled:opacity-40 transition-colors shadow-2xs"
+              className="p-1 rounded-md border border-hairline-light dark:border-hairline-dark hover:bg-subtle-light dark:hover:bg-subtle-dark disabled:opacity-40 transition-colors"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="p-1 rounded bg-[#111827] border border-[#334155] text-slate-300 hover:bg-[#1e293b] disabled:opacity-40 transition-colors shadow-2xs"
+              className="p-1 rounded-md border border-hairline-light dark:border-hairline-dark hover:bg-subtle-light dark:hover:bg-subtle-dark disabled:opacity-40 transition-colors"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Source Viewer Modal */}
       {selectedFileForView && (
         <SourceViewerModal
           repositoryId={repositoryId}

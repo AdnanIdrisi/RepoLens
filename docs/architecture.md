@@ -1,16 +1,17 @@
 # RepoLens Architecture Overview
 
-RepoLens is an AI-powered code intelligence platform designed for deterministic codebase analysis, interactive architecture visualization, execution flow tracing, semantic code search, and grounded AI pair-investigation.
+RepoLens is an AI-powered code intelligence platform designed for deterministic codebase analysis, interactive architecture visualization, execution flow tracing, zero-embedding hybrid code search, and grounded AI pair-investigation.
 
 ```mermaid
 flowchart TD
-    subgraph Client ["Client (React 18 + Vite)"]
-        UI[Web Interface]
-        GraphUI[Interactive Graph View]
-        SearchUI[Hybrid Search View]
-        TraceUI[Execution Flow View]
+    subgraph Client ["Client (React 18 + Vite + Light/Dark UI)"]
+        UI[Slim Rail & Top Navigation]
+        DashUI[Repository Overview]
+        GraphUI[Code Relationship Graph]
+        SearchUI[Code Search View]
+        TraceUI[Flow Tracing View]
         AgentUI[Gemini Chat View]
-        ImpactUI[Change Impact View]
+        ImpactUI[Impact Analysis View]
     end
 
     subgraph API ["API Server (Express + TypeScript)"]
@@ -18,25 +19,25 @@ flowchart TD
         Auth[Auth & Ownership Guard]
         RepoModule[Repository & Ingestion]
         GraphModule[Graph Service]
-        RetrievalModule[Hybrid Retrieval Engine]
+        RetrievalModule[BM25 & AST Retrieval]
         TracingModule[Flow Tracing Service]
         ImpactModule[Impact Analysis Engine]
         AgentModule[Gemini Agent Service]
     end
 
-    subgraph Engine ["Core Engine Packages"]
+    subgraph Engine ["Core Engine Packages & Worker"]
         CodeAnalyzer["@repolens/code-analyzer\n(Tree-sitter AST & Resolvers)"]
         GraphEngine["@repolens/graph-engine\n(Graph Traversal, Tracing & Impact)"]
-        RetrievalPkg["@repolens/retrieval\n(Chunking, Embeddings, RRF)"]
+        RetrievalPkg["@repolens/retrieval\n(AST Chunking, BM25 & RRF)"]
+        Worker["indexing-worker\n(Persistent Job Polling Daemon)"]
     end
 
     subgraph Data ["Persistence Layer"]
         MongoDB[(MongoDB Database)]
-        VectorIndex[(Vector Search / Atlas)]
     end
 
     subgraph External ["External Services"]
-        GitHub[GitHub REST / GraphQL API]
+        GitHub[GitHub REST API]
         Gemini[Google Gemini API]
     end
 
@@ -50,18 +51,20 @@ flowchart TD
     Auth --> AgentModule
 
     RepoModule --> CodeAnalyzer
+    Worker --> CodeAnalyzer
     GraphModule --> GraphEngine
     TracingModule --> GraphEngine
     ImpactModule --> GraphEngine
     RetrievalModule --> RetrievalPkg
 
     RepoModule --> GitHub
-    RetrievalPkg --> Gemini
+    Worker --> GitHub
     AgentModule --> Gemini
 
     RepoModule --> MongoDB
+    Worker --> MongoDB
     GraphModule --> MongoDB
-    RetrievalModule --> VectorIndex
+    RetrievalModule --> MongoDB
     AgentModule --> MongoDB
 ```
 
@@ -73,14 +76,14 @@ flowchart TD
 repolens/
 ├── apps/
 │   ├── api/                      # Express REST API, auth guards, controllers
-│   └── web/                      # React 18, Vite, Tailwind, React Flow UI
+│   └── web/                      # React 18, Vite, Tailwind CSS (Light/Dark), React Flow UI
 ├── packages/
 │   ├── shared/                   # Domain schemas (Zod), shared types, constants
 │   ├── code-analyzer/            # Tree-sitter AST parsing, declaration extractors, resolvers
 │   ├── graph-engine/             # In-memory graph builder, BFS/DFS traversal, flow tracer, impact analyzer
-│   └── retrieval/                # Structural chunking, embeddings, RRF ranking
+│   └── retrieval/                # Structural AST chunking, Okapi BM25 scorer, RRF ranking
 ├── workers/
-│   └── indexing-worker/          # Background worker for async repository ingestion
+│   └── indexing-worker/          # Persistent background polling daemon for async ingestion
 ├── docs/                         # Architecture, security, and API documentation
 └── fixtures/                     # Deterministic test repositories
 ```
@@ -89,10 +92,10 @@ repolens/
 
 ## 2. Core Architectural Principles
 
-1. **Deterministic Static Analysis First, AI Second:** All relations (imports, calls, inheritance, route definitions) are resolved via tree-sitter AST parsing and symbol resolution prior to invoking AI models.
-2. **Strict Citation Grounding:** The Gemini AI agent is equipped with read-only investigation tools (`readFile`, `searchCode`, `traceExecutionFlow`, `analyzeImpact`, etc.) and must cite exact file ranges (`[file:line-range]`).
-3. **Multi-Stage Ingestion Pipeline:** Ingestion executes in discrete stages (`validate` → `resolve` → `discover` → `filter` → `graph` → `chunks` → `routes` → `publish`) with atomic version updates to prevent dirty state.
-4. **Incremental Commit Differencing:** Ingestion compares Git tree blob SHAs between revisions, only re-parsing and re-indexing modified or newly added files.
+1. **Deterministic Static Analysis First, AI Second:** All relations (imports, calls, inheritance, route definitions) are resolved via Tree-sitter AST parsing and symbol resolution prior to invoking AI models.
+2. **Zero-Embedding Code Search:** Code retrieval relies on AST-aligned structural chunking, identifier-aware tokenization, and Okapi BM25 + Reciprocal Rank Fusion rather than external vector embedding calls, keeping search deterministic and fast.
+3. **Strict Citation Grounding:** The Gemini AI agent is equipped with read-only investigation tools (`readFile`, `searchCode`, `traceExecutionFlow`, `analyzeImpact`, etc.) and cites exact file ranges (`[file:line-range]`).
+4. **Persistent Worker & Atomic Versioning:** The `indexing-worker` polls continuously for queued repository jobs (`validate_repository` → `resolve_commit` → `discover_tree` → `filter_files` → `discovered`) with graceful `SIGINT`/`SIGTERM` shutdown and atomic index version updates.
 5. **Untrusted Code Security:** Repositories are analyzed purely statically without executing code, installing dependencies, or running build scripts.
 
 ---
@@ -100,14 +103,13 @@ repolens/
 ## 3. Data Flow & Subsystems
 
 ### P1.1 Code Relationship Graph
-- Parses AST import statements and exports.
+- Parses AST import statements, exports, and declarations.
 - Builds file-to-file and symbol-to-symbol directed edges.
-- Supports scoped neighborhood retrieval with clamped BFS depth.
+- Supports scoped neighborhood retrieval with clamped BFS depth and interactive React Flow inspection.
 
-### P1.2 Semantic & Hybrid Code Search
+### P1.2 Zero-Embedding Code Search
 - Chunks source code aligned to AST structural boundaries (functions, classes, methods, routes).
-- Computes 768-dimensional embeddings via Google Gemini with deterministic offline fallback.
-- Merges lexical keyword matches and cosine vector similarities using Reciprocal Rank Fusion ($k=60$).
+- Scores queries with Okapi BM25, AST entity matching, and query expansion, fused via Reciprocal Rank Fusion ($k=60$).
 
 ### P1.3 Static Execution Flow Tracing
 - Discovers HTTP routes (`GET`, `POST`, `PUT`, `DELETE`, etc.).
@@ -115,11 +117,10 @@ repolens/
 - Bounded traversal with cycle detection.
 
 ### P1.4 Gemini AI Agent with Read-Only Tools
-- Investigates codebases using 7 structured read-only tools.
+- Investigates codebases using 7 structured read-only tools over SSE streaming.
 - Multi-turn function calling with budget enforcement (max 5 iterations per turn).
 - Cites verifiable source locations.
 
 ### P1.5 Change Impact Analysis
 - Reverse dependency graph traversal.
-- Computes Layer-1 directly affected symbols, Layer-2+ transitive callers, and companion test suites.
-- Emits explainable traversal paths.
+- Computes Layer-1 directly affected files, Layer-2+ transitive callers, and companion test suites with explainable traversal paths.

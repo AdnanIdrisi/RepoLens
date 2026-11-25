@@ -9,40 +9,27 @@ export default {
     extend: {
       colors: {
         canvas: {
-          DEFAULT: "#090d16",
-          ground: "#060910",
+          light: "#FAF9F6",
+          dark: "#0A1114",
         },
-        panel: {
-          DEFAULT: "#0f172a",
-          low: "#090d16",
-          high: "#161f30",
-          highest: "#1e293b",
+        surface: {
+          light: "#FFFFFF",
+          dark: "#111B20",
         },
-        border: {
-          solid: "#1e293b",
-          muted: "#161f30",
-          focus: "#6366f1",
+        subtle: {
+          light: "#F3F4F6",
+          dark: "#0D1519",
         },
-        accent: {
-          indigo: "#6366f1",
-          "indigo-hover": "#818cf8",
-          "indigo-light": "rgba(99, 102, 241, 0.15)",
-          cyan: "#38bdf8",
-          emerald: "#10b981",
-          amber: "#f59e0b",
-          rose: "#f43f5e",
+        hairline: {
+          light: "#E5E7EB",
+          dark: "#1E2D35",
         },
-        content: {
-          primary: "#f8fafc",
-          muted: "#94a3b8",
-          tertiary: "#64748b",
-        }
       },
       fontFamily: {
         sans: ["'Inter'", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
         display: ["'Plus Jakarta Sans'", "'Inter'", "-apple-system", "sans-serif"],
-        mono: ["'JetBrains Mono'", "Fira Code", "monospace"]
-      }
+        mono: ["'JetBrains Mono'", "Fira Code", "monospace"],
+      },
     },
   },
   plugins: [],

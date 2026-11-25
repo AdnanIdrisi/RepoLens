@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Workflow,
-  Layers,
+  RefreshCw,
   Loader2,
   AlertCircle,
   FileCode,
-  Info,
   ChevronRight,
-  GitBranch,
-  Search
+  Search,
 } from "lucide-react";
 import { TraceStepCard } from "./TraceStepCard";
 import { SourceViewerModal } from "../repositories/SourceViewerModal";
@@ -62,20 +60,16 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
           body: JSON.stringify({
             method: route.method,
             path: route.path,
-            maxDepth: 6
-          })
+          }),
         });
-
         const data = await res.json();
         if (res.ok && data.success) {
-          setSteps(data.data.steps || []);
+          setSteps(data.data?.steps || []);
         } else {
-          setError(data.error?.message || "Failed to trace execution flow");
-          setSteps([]);
+          setError(data.error?.message || "Failed to trace route");
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Trace network error");
-        setSteps([]);
+        setError(err instanceof Error ? err.message : "Trace error");
       } finally {
         setTracing(false);
       }
@@ -85,7 +79,7 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
 
   useEffect(() => {
     fetchRoutes();
-  }, [fetchRoutes]);
+  }, [repositoryId]);
 
   useEffect(() => {
     if (selectedRoute) {
@@ -98,141 +92,118 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
     setError(null);
     try {
       const res = await fetch(`/api/repositories/${repositoryId}/routes/index`, {
-        method: "POST"
+        method: "POST",
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok) {
         await fetchRoutes();
       } else {
+        const data = await res.json();
         setError(data.error?.message || "Failed to index routes");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Route indexing error");
+      setError(err instanceof Error ? err.message : "Indexing error");
     } finally {
       setIndexing(false);
     }
   };
 
-  const filteredRoutes = routes.filter((r) =>
-    r.path.toLowerCase().includes(routeSearch.toLowerCase()) ||
-    r.method.toLowerCase().includes(routeSearch.toLowerCase()) ||
-    r.filePath.toLowerCase().includes(routeSearch.toLowerCase())
+  const filteredRoutes = routes.filter(
+    (r) =>
+      r.path.toLowerCase().includes(routeSearch.toLowerCase()) ||
+      r.method.toLowerCase().includes(routeSearch.toLowerCase())
   );
 
   const getMethodBadge = (method: string) => {
     const upper = method.toUpperCase();
     switch (upper) {
       case "GET":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#059669] text-white border border-[#059669] font-mono">GET</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono">GET</span>;
       case "POST":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#4f46e5] text-white border border-[#4f46e5] font-mono">POST</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-mono">POST</span>;
       case "PUT":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#d97706] text-white border border-[#d97706] font-mono">PUT</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono">PUT</span>;
       case "DELETE":
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#dc2626] text-white border border-[#dc2626] font-mono">DEL</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 font-mono">DEL</span>;
       default:
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#25334d] text-slate-200 border border-[#25334d] font-mono">{upper}</span>;
+        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-subtle-light dark:bg-subtle-dark text-[#6B7280] dark:text-[#94A3B8] font-mono">{upper}</span>;
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner and Route Indexing Button */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-[#1e293b] bg-[#0f172a] shadow-xs">
-        <div className="flex items-center space-x-3">
-          <div className="h-9 w-9 rounded-lg bg-[#1e293b] text-indigo-400 border border-[#334155] flex items-center justify-center">
-            <Workflow className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-100 font-display">Static Execution Flow Tracing (P1.3)</h2>
-            <p className="text-xs text-slate-400">
-              {routes.length > 0
-                ? `${routes.length} Express routes discovered across codebase`
-                : "No routes indexed yet. Click to discover and map route handler chains."}
-            </p>
-          </div>
+    <div className="space-y-5">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center space-x-2.5">
+          <h1 className="text-lg font-bold font-display">Flow Tracing</h1>
+          <span className="text-xs font-mono text-[#6B7280] dark:text-[#94A3B8]">
+            {routes.length} routes
+          </span>
         </div>
 
         <button
           onClick={handleIndexRoutes}
           disabled={indexing}
-          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-[#111827] hover:bg-[#1e293b] text-slate-300 text-xs font-semibold border border-[#334155] transition-all disabled:opacity-50 shadow-2xs"
+          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark hover:bg-subtle-light dark:hover:bg-[#1A272E] text-xs font-medium transition-colors disabled:opacity-50"
         >
           {indexing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-400" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <Layers className="h-3.5 w-3.5 text-slate-400" />
+            <RefreshCw className="h-3.5 w-3.5 text-[#6B7280] dark:text-[#94A3B8]" />
           )}
-          <span>{indexing ? "Discovering Routes..." : "Discover / Re-Index Routes"}</span>
+          <span>{indexing ? "Scanning..." : "Re-Index"}</span>
         </button>
       </div>
 
-      {/* Disclaimer Alert */}
-      <div className="p-3 rounded-lg border border-[#1e293b] bg-[#0b0f19] text-slate-400 text-xs flex items-center space-x-2.5 shadow-2xs">
-        <Info className="h-4 w-4 text-indigo-400 flex-shrink-0" />
-        <span>
-          <strong className="text-slate-200">Static Analysis Notice:</strong> Execution paths are inferred statically from AST declarations, middlewares, and call references. They represent static architectural flows rather than runtime telemetry.
-        </span>
-      </div>
-
-      {/* Error Alert */}
       {error && (
-        <div className="p-4 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-300 text-sm flex items-center space-x-2 font-medium">
-          <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-400" />
+        <div className="p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300 text-xs flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Main Grid: Route List Sidebar + Trace Flow Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Discovered Routes List (4 columns) */}
-        <div className="lg:col-span-4 rounded-xl border border-[#1e293b] bg-[#0f172a] p-4 space-y-3 shadow-xs">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">
-              Discovered Routes ({routes.length})
-            </h3>
-          </div>
-
-          {/* Route Search Filter */}
+      {/* 2-Column Split */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Routes List */}
+        <div className="lg:col-span-4 rounded-xl border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark p-4 space-y-3 h-fit">
           <div className="relative">
-            <Search className="h-3.5 w-3.5 text-slate-500 absolute left-3 top-2.5 pointer-events-none" />
+            <Search className="h-3.5 w-3.5 text-[#6B7280] dark:text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={routeSearch}
               onChange={(e) => setRouteSearch(e.target.value)}
               placeholder="Filter routes..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-md bg-[#111827] border border-[#334155] text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:bg-[#161f30] focus:border-indigo-500 shadow-2xs font-mono"
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-subtle-light dark:bg-subtle-dark border border-hairline-light dark:border-hairline-dark text-xs font-mono focus:outline-none focus:border-[#111827] dark:focus:border-[#F59E0B]"
             />
           </div>
 
           {loadingRoutes ? (
-            <div className="py-12 flex flex-col items-center justify-center text-slate-400 text-xs">
-              <Loader2 className="h-5 w-5 animate-spin text-indigo-400 mb-2" />
-              <span>Scanning routes...</span>
+            <div className="py-10 flex justify-center text-[#6B7280] dark:text-[#94A3B8] text-xs">
+              <Loader2 className="h-4 w-4 animate-spin" />
             </div>
           ) : filteredRoutes.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 text-xs">
-              <span>No Express routes found matching filter.</span>
+            <div className="py-10 text-center text-[#6B7280] dark:text-[#94A3B8] text-xs">
+              No routes found
             </div>
           ) : (
-            <div className="space-y-1.5 max-h-[550px] overflow-y-auto pr-1">
+            <div className="space-y-1 max-h-[540px] overflow-y-auto">
               {filteredRoutes.map((r) => {
-                const isSelected = selectedRoute?.method === r.method && selectedRoute?.path === r.path;
+                const isSelected =
+                  selectedRoute?.method === r.method && selectedRoute?.path === r.path;
                 return (
                   <button
                     key={`${r.method}-${r.path}`}
                     onClick={() => setSelectedRoute(r)}
-                    className={`w-full text-left p-2.5 rounded-md transition-all flex items-center justify-between text-xs border ${
+                    className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors flex items-center justify-between text-xs ${
                       isSelected
-                        ? "bg-indigo-600 border-indigo-500 text-white shadow-xs"
-                        : "bg-[#111827] border-[#1e293b] text-slate-300 hover:bg-[#161f30] hover:text-slate-100 shadow-2xs"
+                        ? "bg-[#111827] dark:bg-[#F59E0B] text-white dark:text-[#0A1114]"
+                        : "hover:bg-subtle-light dark:hover:bg-[#162329]"
                     }`}
                   >
                     <div className="flex items-center space-x-2 min-w-0">
                       {getMethodBadge(r.method)}
-                      <span className="font-mono font-medium truncate">{r.path}</span>
+                      <span className="font-mono truncate">{r.path}</span>
                     </div>
-                    <ChevronRight className={`h-3.5 w-3.5 flex-shrink-0 transition-transform ${isSelected ? "text-white translate-x-0.5" : "text-slate-500"}`} />
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />
                   </button>
                 );
               })}
@@ -240,43 +211,37 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
           )}
         </div>
 
-        {/* Right: Ordered Execution Flow Timeline (8 columns) */}
-        <div className="lg:col-span-8 rounded-xl border border-[#1e293b] bg-[#0f172a] p-6 shadow-xs">
+        {/* Execution Timeline */}
+        <div className="lg:col-span-8 rounded-xl border border-hairline-light dark:border-hairline-dark bg-surface-light dark:bg-surface-dark p-6">
           {selectedRoute ? (
             <div className="space-y-6">
-              {/* Active Route Header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#1e293b]">
-                <div className="flex items-center space-x-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-hairline-light dark:border-hairline-dark">
+                <div className="flex items-center space-x-2.5">
                   {getMethodBadge(selectedRoute.method)}
-                  <span className="text-base font-mono font-bold text-slate-100 tracking-tight">
-                    {selectedRoute.path}
-                  </span>
+                  <span className="text-sm font-mono font-bold">{selectedRoute.path}</span>
                 </div>
 
-                <div className="flex items-center space-x-3 text-xs text-slate-400 font-mono">
-                  <button
-                    onClick={() => setSelectedFileForModal(selectedRoute.filePath)}
-                    className="flex items-center space-x-1 hover:text-slate-100 transition-colors font-medium"
-                  >
-                    <FileCode className="h-3.5 w-3.5" />
-                    <span>{selectedRoute.filePath}:{selectedRoute.startLine}</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => setSelectedFileForModal(selectedRoute.filePath)}
+                  className="flex items-center space-x-1 text-xs font-mono text-[#6B7280] dark:text-[#94A3B8] hover:text-[#111827] dark:hover:text-[#F1F5F9] transition-colors"
+                >
+                  <FileCode className="h-3.5 w-3.5" />
+                  <span>
+                    {selectedRoute.filePath}:{selectedRoute.startLine}
+                  </span>
+                </button>
               </div>
 
-              {/* Execution Steps Timeline */}
               {tracing ? (
-                <div className="py-24 flex flex-col items-center justify-center text-slate-400 text-sm">
-                  <Loader2 className="h-6 w-6 animate-spin text-indigo-400 mb-2" />
-                  <span>Traversing static call hierarchy and dependency graph...</span>
+                <div className="py-20 flex justify-center text-[#6B7280] dark:text-[#94A3B8]">
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
               ) : steps.length === 0 ? (
-                <div className="py-20 text-center text-slate-500 text-xs">
-                  <GitBranch className="h-8 w-8 mx-auto mb-2 text-slate-500" />
-                  <span>No static call steps resolved for this route.</span>
+                <div className="py-16 text-center text-[#6B7280] dark:text-[#94A3B8] text-xs">
+                  No static steps resolved
                 </div>
               ) : (
-                <div className="space-y-0">
+                <div>
                   {steps.map((step, idx) => (
                     <TraceStepCard
                       key={`${step.symbolId}-${idx}`}
@@ -290,15 +255,14 @@ export function FlowTracingPage({ repositoryId }: FlowTracingPageProps) {
               )}
             </div>
           ) : (
-            <div className="py-32 text-center text-slate-500 text-sm">
-              <Workflow className="h-10 w-10 mx-auto mb-3 text-slate-500" />
-              <span>Select an Express route from the left to inspect its static execution trace.</span>
+            <div className="py-24 text-center text-[#6B7280] dark:text-[#94A3B8] text-xs">
+              <Workflow className="h-7 w-7 mx-auto mb-2 opacity-40" />
+              <span>Select a route to inspect its trace</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Source Viewer Modal */}
       {selectedFileForModal && (
         <SourceViewerModal
           repositoryId={repositoryId}

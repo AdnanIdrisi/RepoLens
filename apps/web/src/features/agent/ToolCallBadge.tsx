@@ -10,43 +10,35 @@ export function ToolCallBadge({ toolCall }: ToolCallBadgeProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-lg border border-[#1e293b] bg-[#111827] overflow-hidden text-xs my-2 shadow-2xs">
+    <div className="rounded-lg border border-hairline-light dark:border-hairline-dark bg-subtle-light dark:bg-subtle-dark overflow-hidden text-xs my-1.5">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[#161f30] transition-colors"
+        className="w-full flex items-center justify-between px-3 py-1.5 text-left hover:opacity-80 transition-opacity"
       >
         <div className="flex items-center space-x-2 font-mono">
-          <Wrench className="h-3.5 w-3.5 text-indigo-400" />
-          <span className="text-slate-100 font-semibold">{toolCall.name}</span>
-          <span className="text-slate-400 text-[11px]">
-            ({Object.keys(toolCall.args || {}).join(", ")})
-          </span>
+          <Wrench className="h-3 w-3 text-[#6B7280] dark:text-[#94A3B8]" />
+          <span className="font-semibold">{toolCall.name}</span>
         </div>
 
-        <div className="flex items-center space-x-2 text-[11px] text-emerald-400 font-mono font-semibold">
+        <div className="flex items-center space-x-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
           <CheckCircle2 className="h-3 w-3" />
-          <span>Executed</span>
           {expanded ? (
-            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+            <ChevronDown className="h-3.5 w-3.5 text-[#6B7280] dark:text-[#94A3B8]" />
           ) : (
-            <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+            <ChevronRight className="h-3.5 w-3.5 text-[#6B7280] dark:text-[#94A3B8]" />
           )}
         </div>
       </button>
 
       {expanded && (
-        <div className="p-3 bg-[#090d16] border-t border-[#1e293b] font-mono text-[11px] space-y-2 overflow-x-auto">
-          <div>
-            <span className="text-slate-400 block mb-0.5 font-bold">Arguments:</span>
-            <pre className="text-slate-200 bg-[#0f172a] p-2 rounded border border-[#1e293b]">{JSON.stringify(toolCall.args, null, 2)}</pre>
-          </div>
+        <div className="p-2.5 bg-canvas-light dark:bg-canvas-dark border-t border-hairline-light dark:border-hairline-dark font-mono text-[11px] space-y-2 overflow-x-auto">
+          <pre className="p-2 rounded border border-hairline-light dark:border-hairline-dark">
+            {JSON.stringify(toolCall.args, null, 2)}
+          </pre>
           {toolCall.result !== undefined && (
-            <div>
-              <span className="text-slate-400 block mb-0.5 font-bold">Result:</span>
-              <pre className="text-slate-200 bg-[#0f172a] p-2 rounded border border-[#1e293b] max-h-48 overflow-y-auto">
-                {JSON.stringify(toolCall.result, null, 2)}
-              </pre>
-            </div>
+            <pre className="p-2 rounded border border-hairline-light dark:border-hairline-dark max-h-40 overflow-y-auto">
+              {JSON.stringify(toolCall.result, null, 2)}
+            </pre>
           )}
         </div>
       )}

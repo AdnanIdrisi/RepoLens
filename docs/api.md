@@ -8,7 +8,7 @@ All responses follow the unified envelope:
   "success": true,
   "data": { ... },
   "meta": {
-    "timestamp": "2026-10-24T12:00:00.000Z"
+    "timestamp": "2026-11-25T12:00:00.000Z"
   }
 }
 ```
@@ -23,7 +23,7 @@ Error responses return:
     "details": { ... }
   },
   "meta": {
-    "timestamp": "2026-10-24T12:00:00.000Z"
+    "timestamp": "2026-11-25T12:00:00.000Z"
   }
 }
 ```
@@ -45,69 +45,87 @@ Error responses return:
 
 ## Endpoints
 
-### 1. Health
+### 1. Health & Readiness
 - **`GET /api/health`**
-  - Returns service status, uptime, and database connection state.
+  - Returns service status and uptime.
+- **`GET /api/ready`**
+  - Returns database connection readiness (`checks.database`).
 
 ---
 
-### 2. Repositories
+### 2. Repositories & Jobs
 - **`POST /api/repositories`**
-  - **Body:** `{ "owner": "expressjs", "name": "express", "branch": "master" }`
-  - Validates repository on GitHub and registers it for indexing.
+  - **Body:** `{ "url": "https://github.com/owner/repo", "ref": "main" }`
+  - Validates the repository on GitHub and queues an asynchronous ingestion job.
 - **`GET /api/repositories`**
   - Returns registered repositories.
 - **`GET /api/repositories/:id`**
   - Returns metadata for a specific repository.
+- **`GET /api/repositories/:id/files`**
+  - **Query:** `?page=1&limit=25&status=all|discovered|excluded&search=...`
+  - Returns paginated source files (`items` + `pagination`) in the active commit tree.
 - **`POST /api/repositories/:id/sync`**
   - Triggers incremental commit differencing and index synchronization.
+- **`GET /api/jobs/:jobId`**
+  - Returns live ingestion job stage, file counters, and error diagnostics.
+- **`POST /api/jobs/:jobId/cancel`**
+  - Cancels a running ingestion job.
 
 ---
 
 ### 3. Source Files
-- **`GET /api/repositories/:id/files`**
-  - Returns all indexed source files in the active commit tree.
-- **`GET /api/repositories/:id/files/:fileId/content`**
-  - Returns source code lines, line numbers, and file metadata. Validates safe relative paths.
+- **`GET /api/repositories/:id/file/*`**
+  - Returns source code content, line count, byte size, and SHA-256 content hash for a validated relative POSIX file path.
 
 ---
 
 ### 4. Code Relationship Graph (P1.1)
 - **`GET /api/repositories/:id/graph`**
-  - **Query:** `?scope=all|files|symbols&nodeId=...&depth=1..3`
-  - Returns nodes (files, functions, classes, routes) and edges (imports, calls, defines).
+  - **Query:** `?scope=neighborhood|all&depth=1..3&limit=150&rootNodeId=...`
+  - Returns nodes (files, functions, classes, methods, routes) and directed edges (`imports`, `defines`, `routes_to`, `calls`).
+- **`GET /api/repositories/:id/symbols`**
+  - Searches indexed AST symbols in the repository.
+- **`GET /api/repositories/:id/symbols/:symbolId`**
+  - Returns details for a specific indexed symbol.
+- **`POST /api/repositories/:id/index`**
+  - Triggers AST parsing and relationship graph indexing for the repository.
 
 ---
 
-### 5. Semantic & Hybrid Search (P1.2)
-- **`GET /api/repositories/:id/search`**
-  - **Query:** `?q=authenticate+jwt&mode=hybrid|vector|lexical&limit=10`
-  - Returns ranked code chunks with reciprocal rank scores and source line ranges.
+### 5. Code Search (P1.2)
+- **`POST /api/repositories/:id/search`** and **`GET /api/repositories/:id/search`**
+  - **Body / Query:** `{ "query": "authenticate jwt", "matchType": "hybrid|vector|lexical", "limit": 20, "path": "...", "symbolKinds": ["function"] }`
+  - Returns ranked code chunks scored with zero-embedding Okapi BM25 + AST symbol matching and Reciprocal Rank Fusion.
+- **`POST /api/repositories/:id/search/index`**
+  - Builds or refreshes structural AST chunks for the repository.
+- **`GET /api/repositories/:id/search/stats`**
+  - Returns indexed chunk count, AST entity count, and search readiness status.
 
 ---
 
 ### 6. Static Execution Flow Tracing (P1.3)
 - **`GET /api/repositories/:id/routes`**
-  - Returns all statically discovered HTTP routes (`GET /api/users`, `POST /login`, etc.).
-- **`GET /api/repositories/:id/trace`**
-  - **Query:** `?routeId=...` or `?method=GET&path=/users`
-  - Returns execution steps: Route Definition → Middlewares → Controller → Service → Model.
+  - Returns all statically discovered HTTP routes (`GET`, `POST`, `PUT`, `DELETE`, etc.).
+- **`POST /api/repositories/:id/trace`**
+  - **Body:** `{ "method": "GET", "path": "/api/users" }`
+  - Returns ordered execution steps: Route Definition → Middlewares → Controller → Service → Model.
+- **`POST /api/repositories/:id/routes/index`**
+  - Discovers and indexes HTTP routes across the repository.
 
 ---
 
 ### 7. Gemini AI Agent (P1.4)
-- **`POST /api/conversations`**
-  - **Body:** `{ "repositoryId": "..." }`
-  - Initializes a new interactive investigation conversation.
-- **`GET /api/conversations/:id`**
-  - Retrieves conversation messages, tool executions, and verified citations.
-- **`POST /api/conversations/:id/messages`**
-  - **Body:** `{ "message": "Where is the authentication middleware implemented?" }`
-  - Executes multi-turn tool investigation loop and returns answer with source citations.
+- **`POST /api/repositories/:id/agent/chat`**
+  - **Body:** `{ "message": "Where is authentication handled?", "conversationId": "..." }`
+  - Supports SSE (`Accept: text/event-stream`) streaming of status updates, tool executions, and final grounded response with `[file:line-range]` citations.
+- **`GET /api/repositories/:id/agent/conversations`**
+  - Lists agent conversations for the repository.
+- **`GET /api/repositories/:id/agent/conversations/:conversationId`**
+  - Retrieves messages, tool executions, and verified citations for a conversation.
 
 ---
 
 ### 8. Change Impact Analysis (P1.5)
-- **`GET /api/repositories/:id/impact`**
-  - **Query:** `?filePath=src/auth/jwt.ts&symbolName=verifyToken&maxDepth=3`
-  - Returns Layer-1 direct dependents, Layer-2+ transitive callers, and companion test files.
+- **`POST /api/repositories/:id/impact`**
+  - **Body:** `{ "targetFilePath": "src/auth/jwt.ts", "maxDepth": 3 }`
+  - Returns Layer-1 direct dependents (`directAffected`), Layer-2+ transitive callers (`indirectAffected`) with dependency paths, and suggested test suites (`suggestedTests`).
